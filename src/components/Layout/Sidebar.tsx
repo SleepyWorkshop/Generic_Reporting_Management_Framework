@@ -15,12 +15,6 @@ const configuredItems = loadNavigation(menu, {
     reportIds: getReportIds(),
     dashboardIds: getDashboardIds(),
 });
-const userManagementItem: NavigationItem = {
-    id: "user-management",
-    title: "User Management",
-    icon: "settings",
-    route: "/settings/users",
-};
 const icons: Record<NavigationIcon, typeof LayoutDashboard> = {
     dashboard: LayoutDashboard,
     reports: FolderKanban,
@@ -113,10 +107,7 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
         });
     };
 
-    const navigationItems = authentication.status === "authenticated" && authentication.user.isAdmin
-        ? [...items, userManagementItem]
-        : items;
-    const visibleItems = navigationItems
+    const visibleItems = items
         .filter(item => item.visible !== false)
         .filter(item => !item.children || item.children.some(child => child.visible !== false));
 
@@ -276,7 +267,10 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
                 <div className="app-sidebar__account">
                     <div className="app-sidebar__identity" title={authentication.user.username}>
                         <UserRound aria-hidden="true" />
-                        <span className="app-sidebar__label">{authentication.user.username}</span>
+                        <span className="app-sidebar__label app-sidebar__identity-copy">
+                            <strong>{authentication.user.username}</strong>
+                            <small>{authentication.user.isAdmin ? "Administrator" : "User"}</small>
+                        </span>
                     </div>
                     <button
                         type="button"

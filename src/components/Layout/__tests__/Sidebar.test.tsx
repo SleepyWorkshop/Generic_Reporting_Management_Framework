@@ -1,10 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import Sidebar from "../Sidebar";
 import type { NavigationItem } from "../../../types/navigation";
 import { AuthProvider, useAuth } from "../../../auth";
+
+const { logoutMock } = vi.hoisted(() => ({ logoutMock: vi.fn() }));
+
+vi.mock("../../../auth/authService", async importOriginal => ({
+    ...await importOriginal<typeof import("../../../auth/authService")>(),
+    logout: logoutMock,
+}));
 
 const items: NavigationItem[] = [
     { id: "dashboard", title: "Dashboard", icon: "dashboard", route: "/" },
@@ -14,6 +21,7 @@ const items: NavigationItem[] = [
             { id: "item", title: "Item Report", icon: "report", reportId: "item" },
         ],
     },
+    { id: "settings", title: "Settings", icon: "settings", route: "/settings" },
 ];
 
 function renderSidebar() {
@@ -38,7 +46,11 @@ function AuthenticatedSidebar({ isAdmin }: { isAdmin: boolean }) {
 }
 
 describe("Sidebar", () => {
-    beforeEach(() => localStorage.clear());
+    beforeEach(() => {
+        localStorage.clear();
+        logoutMock.mockReset();
+        logoutMock.mockResolvedValue({ authenticated: false, user: null });
+    });
 
     it("renders branding and nested report navigation", () => {
         renderSidebar();
@@ -78,15 +90,28 @@ describe("Sidebar", () => {
         expect(container.querySelector("nav")?.getAttribute("data-mobile-open")).toBe("false");
     });
 
-    it("shows user management only to administrators", () => {
+    it("shows Settings to every user without exposing User Management directly", () => {
         const { rerender } = render(
             <AuthProvider enabled={false}><AuthenticatedSidebar isAdmin={false} /></AuthProvider>
         );
         fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
+        expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
         expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
+        expect(screen.getAllByText("User")).toHaveLength(2);
 
         rerender(<AuthProvider enabled={false}><AuthenticatedSidebar isAdmin /></AuthProvider>);
         fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
-        expect(screen.getByRole("link", { name: "User Management" })).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
+        expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
+        expect(screen.getByText("Administrator")).toBeTruthy();
+    });
+
+    it("logs out from the authenticated user area", async () => {
+        render(<AuthProvider enabled={false}><AuthenticatedSidebar isAdmin /></AuthProvider>);
+        fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
+        fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+        await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull());
     });
 });

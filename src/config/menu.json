@@ -55,5 +55,12 @@
         "visible": true
       }
     ]
+  },
+  {
+    "id": "settings",
+    "title": "Settings",
+    "icon": "settings",
+    "route": "/settings",
+    "visible": true
   }
 ]

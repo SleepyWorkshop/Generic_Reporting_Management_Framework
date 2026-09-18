@@ -73,6 +73,15 @@ describe("first-time setup flow", () => {
         expect(await screen.findByRole("heading", { name: "Application setup" })).not.toBeNull();
     });
 
+    it.each(["/settings", "/settings/users"])(
+        "keeps Settings behind first-time setup: %s",
+        async path => {
+            executeRequestMock.mockResolvedValue(setupResponse(false));
+            renderFlow(path);
+            expect(await screen.findByRole("heading", { name: "Application setup" })).not.toBeNull();
+        }
+    );
+
     it("does not show setup after initialization", async () => {
         executeRequestMock
             .mockResolvedValueOnce(setupResponse(true))

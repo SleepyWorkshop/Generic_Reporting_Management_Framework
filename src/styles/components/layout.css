@@ -229,6 +229,24 @@
     font-size: 12px;
 }
 
+.app-sidebar__identity-copy {
+    display: grid;
+    gap: 2px;
+}
+
+.app-sidebar__identity-copy strong {
+    overflow: hidden;
+    color: #334155;
+    font-size: 13px;
+    text-overflow: ellipsis;
+}
+
+.app-sidebar__identity-copy small {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+}
+
 .app-sidebar[data-collapsed="true"] .app-sidebar__identity,
 .app-sidebar[data-collapsed="true"] .app-sidebar__logout {
     gap: 0;

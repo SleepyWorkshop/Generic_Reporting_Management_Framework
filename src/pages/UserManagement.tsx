@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { getRequestErrorMessage, isRequestAbort } from "../api/request";
 import { useAuth, type ManagedAuthUser } from "../auth";
@@ -107,7 +108,11 @@ export default function UserManagement() {
         <main className="user-management-page">
             <header className="user-management-header">
                 <div>
-                    <p className="user-management-eyebrow">Settings</p>
+                    <nav className="settings-breadcrumb" aria-label="Breadcrumb">
+                        <Link to="/settings">Settings</Link>
+                        <span aria-hidden="true">/</span>
+                        <span aria-current="page">User Management</span>
+                    </nav>
                     <h1>User Management</h1>
                     <p>Create and manage application accounts.</p>
                 </div>

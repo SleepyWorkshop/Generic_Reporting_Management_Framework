@@ -8,6 +8,7 @@ import DashboardViewer from "../pages/DashboardViewer";
 import Setup from "../pages/Setup";
 import Login from "../pages/Login";
 import UserManagement from "../pages/UserManagement";
+import Settings from "../pages/Settings";
 import ErrorState from "../components/Common/Error";
 import Loading from "../components/Common/Loading";
 import menu from "../config/menu.json";
@@ -78,6 +79,8 @@ export function ApplicationRoutes() {
                         path="/report/:reportId"
                         element={<ReportViewer />}
                     />
+
+                    <Route path="/settings" element={<Settings />} />
 
                     <Route element={<AdminRoute />}>
                         <Route path="/settings/users" element={<UserManagement />} />

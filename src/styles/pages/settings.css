@@ -1,0 +1,142 @@
+.settings-page {
+    display: grid;
+    gap: 24px;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.settings-header h1 {
+    margin: 3px 0 8px;
+    color: #0f172a;
+    font-size: clamp(28px, 4vw, 38px);
+}
+
+.settings-header p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.settings-eyebrow {
+    color: #2563eb !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
+}
+
+.settings-option,
+.settings-empty {
+    padding: clamp(20px, 4vw, 28px);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+}
+
+.settings-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px 16px;
+}
+
+.settings-option__icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.settings-option__icon svg {
+    width: 21px;
+    height: 21px;
+}
+
+.settings-option__content h2,
+.settings-empty h2 {
+    margin: 0 0 7px;
+    color: #1e293b;
+    font-size: 18px;
+}
+
+.settings-option__content p,
+.settings-empty p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.settings-option__link {
+    display: inline-flex;
+    grid-column: 2;
+    width: fit-content;
+    min-height: 40px;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.settings-option__link:hover {
+    background: #1d4ed8;
+}
+
+.settings-option__link svg {
+    width: 16px;
+    height: 16px;
+}
+
+.settings-empty {
+    text-align: center;
+}
+
+.settings-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.settings-breadcrumb a {
+    color: #2563eb;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.settings-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+    .settings-page {
+        gap: 18px;
+    }
+
+    .settings-option {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-option__link {
+        grid-column: 1;
+        width: 100%;
+        justify-content: center;
+    }
+}

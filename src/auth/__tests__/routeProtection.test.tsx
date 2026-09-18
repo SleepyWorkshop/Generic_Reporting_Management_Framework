@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -58,7 +58,7 @@ function prepareSession(authenticated: boolean, isAdmin = true) {
 describe("protected application routes", () => {
     beforeEach(() => executeRequestMock.mockReset());
 
-    it.each(["/", "/dashboard/item-dashboard", "/report/item"])(
+    it.each(["/", "/dashboard/item-dashboard", "/report/item", "/settings", "/settings/users"])(
         "redirects unauthenticated direct navigation to login: %s",
         async path => {
             prepareSession(false);
@@ -102,5 +102,20 @@ describe("protected application routes", () => {
         renderRoute("/settings/users");
         expect(await screen.findByText("Dashboard route")).not.toBeNull();
         expect(screen.queryByText("User management route")).toBeNull();
+    });
+
+    it("renders Settings without admin options for a non-admin", async () => {
+        prepareSession(true, false);
+        renderRoute("/settings");
+        expect(await screen.findByRole("heading", { name: "Settings" })).not.toBeNull();
+        expect(screen.getByText("No settings are available for your account")).not.toBeNull();
+        expect(screen.queryByRole("link", { name: /Open User Management/ })).toBeNull();
+    });
+
+    it("lets an admin navigate from Settings to User Management", async () => {
+        prepareSession(true, true);
+        renderRoute("/settings");
+        fireEvent.click(await screen.findByRole("link", { name: /Open User Management/ }));
+        expect(await screen.findByText("User management route")).not.toBeNull();
     });
 });

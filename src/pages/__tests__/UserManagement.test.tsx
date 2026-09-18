@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const serviceMocks = vi.hoisted(() => ({
@@ -33,7 +34,7 @@ const users = [
 
 function renderPage() {
     serviceMocks.listUsers.mockResolvedValue(users);
-    return render(<UserManagement />);
+    return render(<MemoryRouter><UserManagement /></MemoryRouter>);
 }
 
 function rowFor(username: string) {
@@ -47,6 +48,7 @@ describe("User Management", () => {
         renderPage();
         await screen.findByText("Operator");
         expect(screen.getByRole("heading", { name: "User Management" })).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings");
         expect((rowFor("Admin").getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(true);
         expect(screen.queryByText(/passwordHash|sessionId/i)).toBeNull();
     });
