@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Routes, Route } from "react-router-dom";
 
 import Layout from "../components/Layout/Layout";
 
@@ -31,7 +31,6 @@ export default function AppRouter() {
 
 export function ApplicationRoutes() {
     const { state, refresh } = useSetup();
-    const authentication = useAuth();
 
     if (state.status === "loading") {
         return <div className="setup-page"><Loading label="Checking application setup…" /></div>;
@@ -56,40 +55,50 @@ export function ApplicationRoutes() {
         );
     }
 
-    if (authentication.state.status === "loading") {
-        return <div className="setup-page"><Loading label="Restoring your session…" /></div>;
-    }
-    if (authentication.state.status === "unauthenticated") {
-        return (
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-        );
-    }
-
     return (
         <Routes>
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/setup" element={<Navigate to="/" replace />} />
-            <Route element={<Layout />}>
-                <Route
-                    path="/"
-                    element={homeRoute
-                        ? <Navigate to={homeRoute} replace />
-                        : <Dashboard dashboardId="item-dashboard" />}
-                />
+            <Route path="/login" element={<LoginRoute />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/setup" element={<Navigate to="/" replace />} />
+                <Route element={<Layout />}>
+                    <Route
+                        path="/"
+                        element={homeRoute
+                            ? <Navigate to={homeRoute} replace />
+                            : <Dashboard dashboardId="item-dashboard" />}
+                    />
 
-                <Route
-                    path="/dashboard/:dashboardId"
-                    element={<DashboardViewer />}
-                />
+                    <Route
+                        path="/dashboard/:dashboardId"
+                        element={<DashboardViewer />}
+                    />
 
-                <Route
-                    path="/report/:reportId"
-                    element={<ReportViewer />}
-                />
+                    <Route
+                        path="/report/:reportId"
+                        element={<ReportViewer />}
+                    />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
         </Routes>
     );
+}
+
+function ProtectedRoute() {
+    const { state } = useAuth();
+    if (state.status === "loading") {
+        return <div className="setup-page"><Loading label="Restoring your session…" /></div>;
+    }
+    if (state.status === "unauthenticated") {
+        return <Navigate to="/login" replace />;
+    }
+    return <Outlet />;
+}
+
+function LoginRoute() {
+    const { state } = useAuth();
+    if (state.status === "loading") {
+        return <div className="setup-page"><Loading label="Restoring your session…" /></div>;
+    }
+    return state.status === "authenticated" ? <Navigate to="/" replace /> : <Login />;
 }

@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { clearRequestCache } from "../engine/RequestCache";
+import { subscribeToAuthenticationRequired } from "../api/client";
 import { getRequestErrorMessage, isRequestAbort } from "../api/request";
 import { getCurrentSession, login as loginRequest, logout as logoutRequest } from "./authService";
 import type { AuthSessionSnapshot, AuthState } from "./authTypes";
@@ -66,6 +67,13 @@ export function AuthProvider({ children, enabled = true }: { children: ReactNode
             }
         }
     }, [applySessionSnapshot, beginSessionCheck, updateState]);
+
+    useEffect(() => {
+        if (!enabled) return;
+        return subscribeToAuthenticationRequired(() => {
+            applySessionSnapshot({ authenticated: false, user: null });
+        });
+    }, [enabled, applySessionSnapshot]);
 
     useEffect(() => {
         mounted.current = true;

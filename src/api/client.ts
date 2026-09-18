@@ -2,6 +2,12 @@ import type { ApiError, ApiResponse } from "../types/api";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_CREDENTIALS: RequestCredentials = "include";
+const authenticationRequiredListeners = new Set<() => void>();
+
+export function subscribeToAuthenticationRequired(listener: () => void): () => void {
+    authenticationRequiredListeners.add(listener);
+    return () => authenticationRequiredListeners.delete(listener);
+}
 
 export class ApiClientError extends Error {
     readonly status: number;
@@ -45,6 +51,7 @@ export async function apiClient(
     }
 
     if (!response.ok) {
+        const apiError = getApiError(payload);
         const message =
             typeof payload === "object"
             && payload !== null
@@ -53,7 +60,11 @@ export async function apiClient(
                 ? payload.message
                 : `The API returned HTTP ${response.status}.`;
 
-        throw new ApiClientError(message, response.status, getApiError(payload));
+        if (response.status === 401 && apiError?.code === "AUTHENTICATION_REQUIRED") {
+            authenticationRequiredListeners.forEach(listener => listener());
+        }
+
+        throw new ApiClientError(message, response.status, apiError);
     }
 
     if (
