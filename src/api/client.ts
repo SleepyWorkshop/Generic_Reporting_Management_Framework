@@ -1,12 +1,33 @@
 import type { ApiError, ApiResponse } from "../types/api";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 const API_CREDENTIALS: RequestCredentials = "include";
 const authenticationRequiredListeners = new Set<() => void>();
+const csrfProtectedActions = new Set([
+    "auth.login",
+    "auth.logout",
+    "auth.users.create",
+    "auth.users.enable",
+    "auth.users.disable",
+    "auth.users.delete",
+    "auth.users.changePassword",
+    "setup.createAdmin",
+    "insert",
+    "update",
+    "delete",
+    "upsert",
+]);
+let csrfToken: string | null = null;
+let csrfRequest: Promise<string> | null = null;
 
 export function subscribeToAuthenticationRequired(listener: () => void): () => void {
     authenticationRequiredListeners.add(listener);
     return () => authenticationRequiredListeners.delete(listener);
+}
+
+export function clearCsrfToken(): void {
+    csrfToken = null;
+    csrfRequest = null;
 }
 
 export class ApiClientError extends Error {
@@ -27,16 +48,23 @@ export async function apiClient(
     body: object,
     options: RequestInit = {}
 ): Promise<ApiResponse> {
+    const action = getAction(body);
+    const requestToken = action && csrfProtectedActions.has(action)
+        ? await getCsrfToken()
+        : null;
+    const headers = new Headers(options.headers);
+    headers.set("Content-Type", "application/json");
+    if (requestToken) headers.set("X-CSRF-Token", requestToken);
+
     const response = await fetch(API_URL, {
         credentials: API_CREDENTIALS,
         ...options,
         method: "POST",
-        headers: {
-            ...options.headers,
-            "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(body),
     });
+    const rotatedToken = response.headers.get("X-CSRF-Token");
+    if (rotatedToken && /^[a-f0-9]{64}$/.test(rotatedToken)) csrfToken = rotatedToken;
 
     let payload: unknown;
 
@@ -61,7 +89,11 @@ export async function apiClient(
                 : `The API returned HTTP ${response.status}.`;
 
         if (response.status === 401 && apiError?.code === "AUTHENTICATION_REQUIRED") {
+            clearCsrfToken();
             authenticationRequiredListeners.forEach(listener => listener());
+        }
+        if (response.status === 403 && apiError?.code === "CSRF_VALIDATION_FAILED") {
+            clearCsrfToken();
         }
 
         throw new ApiClientError(message, response.status, apiError);
@@ -97,7 +129,48 @@ export async function apiClient(
         throw new ApiClientError(payload.message, response.status, getApiError(payload));
     }
 
+    if (action === "auth.logout") clearCsrfToken();
     return payload as ApiResponse;
+}
+
+async function getCsrfToken(): Promise<string> {
+    if (csrfToken) return csrfToken;
+    if (!csrfRequest) {
+        csrfRequest = fetch(API_URL, {
+            method: "POST",
+            credentials: API_CREDENTIALS,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "auth.csrf" }),
+        }).then(async response => {
+            const payload: unknown = await response.json().catch(() => null);
+            if (!response.ok) {
+                throw new Error("Unable to establish a secure request. Refresh the page and try again.");
+            }
+            const token = parseCsrfToken(payload);
+            csrfToken = token;
+            return token;
+        }).finally(() => {
+            csrfRequest = null;
+        });
+    }
+    return csrfRequest;
+}
+
+function parseCsrfToken(payload: unknown): string {
+    if (typeof payload !== "object" || payload === null || !("data" in payload)
+        || !Array.isArray(payload.data) || payload.data.length !== 1
+        || typeof payload.data[0] !== "object" || payload.data[0] === null
+        || !("csrfToken" in payload.data[0]) || typeof payload.data[0].csrfToken !== "string"
+        || !/^[a-f0-9]{64}$/.test(payload.data[0].csrfToken)) {
+        throw new Error("The API returned an invalid security token.");
+    }
+    return payload.data[0].csrfToken;
+}
+
+function getAction(body: object): string | null {
+    if (!("action" in body)) return null;
+    const action = (body as { action?: unknown }).action;
+    return typeof action === "string" ? action : null;
 }
 
 function getApiError(payload: unknown): ApiError | undefined {
