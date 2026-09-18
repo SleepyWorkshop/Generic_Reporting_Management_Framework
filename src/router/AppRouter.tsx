@@ -7,6 +7,7 @@ import ReportViewer from "../pages/ReportViewer";
 import DashboardViewer from "../pages/DashboardViewer";
 import Setup from "../pages/Setup";
 import Login from "../pages/Login";
+import UserManagement from "../pages/UserManagement";
 import ErrorState from "../components/Common/Error";
 import Loading from "../components/Common/Loading";
 import menu from "../config/menu.json";
@@ -77,6 +78,10 @@ export function ApplicationRoutes() {
                         path="/report/:reportId"
                         element={<ReportViewer />}
                     />
+
+                    <Route element={<AdminRoute />}>
+                        <Route path="/settings/users" element={<UserManagement />} />
+                    </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -101,4 +106,12 @@ function LoginRoute() {
         return <div className="setup-page"><Loading label="Restoring your session…" /></div>;
     }
     return state.status === "authenticated" ? <Navigate to="/" replace /> : <Login />;
+}
+
+function AdminRoute() {
+    const { state } = useAuth();
+    if (state.status !== "authenticated") {
+        return <Navigate to="/login" replace />;
+    }
+    return state.user.isAdmin ? <Outlet /> : <Navigate to="/" replace />;
 }

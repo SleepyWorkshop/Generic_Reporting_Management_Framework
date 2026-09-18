@@ -15,6 +15,7 @@ vi.mock("../../components/Layout/Layout", () => ({
 vi.mock("../../pages/Dashboard", () => ({ default: () => <div>Dashboard route</div> }));
 vi.mock("../../pages/DashboardViewer", () => ({ default: () => <div>Dashboard route</div> }));
 vi.mock("../../pages/ReportViewer", () => ({ default: () => <div>Report route</div> }));
+vi.mock("../../pages/UserManagement", () => ({ default: () => <div>User management route</div> }));
 
 import { ApplicationRoutes } from "../../router/AppRouter";
 import { SetupProvider, useSetup } from "../../setup";
@@ -46,11 +47,11 @@ function renderRoute(path: string) {
     );
 }
 
-function prepareSession(authenticated: boolean) {
+function prepareSession(authenticated: boolean, isAdmin = true) {
     executeRequestMock
         .mockResolvedValueOnce(response({ initialized: true }))
         .mockResolvedValueOnce(response(authenticated
-            ? { authenticated: true, user: { username: "Administrator", isAdmin: true } }
+            ? { authenticated: true, user: { username: "Administrator", isAdmin } }
             : { authenticated: false, user: null }));
 }
 
@@ -88,5 +89,18 @@ describe("protected application routes", () => {
         renderRoute("/login");
         expect(await screen.findByTestId("application-layout")).not.toBeNull();
         expect(screen.queryByRole("heading", { name: "Sign in" })).toBeNull();
+    });
+
+    it("allows administrators to open user management", async () => {
+        prepareSession(true, true);
+        renderRoute("/settings/users");
+        expect(await screen.findByText("User management route")).not.toBeNull();
+    });
+
+    it("redirects non-admin users away from user management", async () => {
+        prepareSession(true, false);
+        renderRoute("/settings/users");
+        expect(await screen.findByText("Dashboard route")).not.toBeNull();
+        expect(screen.queryByText("User management route")).toBeNull();
     });
 });

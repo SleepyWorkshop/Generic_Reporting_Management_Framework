@@ -53,4 +53,34 @@ describe("expired authentication session", () => {
         expect(clearRequestCacheMock).toHaveBeenCalledTimes(2);
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
+
+    it("keeps the authenticated session after an authorization 403", async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(apiResponse({
+                authenticated: true,
+                user: { username: "Operator", isAdmin: false },
+            }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                success: false,
+                message: "Administrator access is required.",
+                error: { code: "ADMIN_REQUIRED", details: [] },
+                data: [],
+            }), { status: 403, headers: { "Content-Type": "application/json" } }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>;
+        const { result } = renderHook(() => useAuth(), { wrapper });
+        await waitFor(() => expect(result.current.state.status).toBe("authenticated"));
+
+        await act(async () => {
+            await apiClient({ action: "auth.users.list" }).catch(() => undefined);
+        });
+
+        expect(result.current.state).toEqual({
+            status: "authenticated",
+            user: { username: "Operator", isAdmin: false },
+        });
+        expect(clearRequestCacheMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
 });

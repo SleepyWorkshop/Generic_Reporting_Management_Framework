@@ -15,6 +15,12 @@ const configuredItems = loadNavigation(menu, {
     reportIds: getReportIds(),
     dashboardIds: getDashboardIds(),
 });
+const userManagementItem: NavigationItem = {
+    id: "user-management",
+    title: "User Management",
+    icon: "settings",
+    route: "/settings/users",
+};
 const icons: Record<NavigationIcon, typeof LayoutDashboard> = {
     dashboard: LayoutDashboard,
     reports: FolderKanban,
@@ -107,7 +113,10 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
         });
     };
 
-    const visibleItems = items
+    const navigationItems = authentication.status === "authenticated" && authentication.user.isAdmin
+        ? [...items, userManagementItem]
+        : items;
+    const visibleItems = navigationItems
         .filter(item => item.visible !== false)
         .filter(item => !item.children || item.children.some(child => child.visible !== false));
 

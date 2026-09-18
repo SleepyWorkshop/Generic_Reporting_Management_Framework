@@ -1,4 +1,4 @@
-import type { AuthSessionSnapshot } from "./authTypes";
+import type { AuthSessionSnapshot, CreateUserRequest, ManagedAuthUser } from "./authTypes";
 import { executeRequest } from "../api/request";
 
 export async function getCurrentSession(signal?: AbortSignal): Promise<AuthSessionSnapshot> {
@@ -18,6 +18,68 @@ export async function login(
 export async function logout(signal?: AbortSignal): Promise<AuthSessionSnapshot> {
     const response = await executeRequest({ action: "auth.logout" }, { signal });
     return parseSessionData(response.data);
+}
+
+export async function listUsers(signal?: AbortSignal): Promise<ManagedAuthUser[]> {
+    const response = await executeRequest({ action: "auth.users.list" }, { signal });
+    return response.data.map(parseManagedUser);
+}
+
+export async function createUser(request: CreateUserRequest): Promise<ManagedAuthUser> {
+    const response = await executeRequest({
+        action: "auth.users.create",
+        username: request.username,
+        password: request.password,
+        isAdmin: request.isAdmin,
+    });
+    return parseManagedUserResult(response.data);
+}
+
+export async function enableUser(username: string): Promise<ManagedAuthUser> {
+    return userMutation("auth.users.enable", username);
+}
+
+export async function disableUser(username: string): Promise<ManagedAuthUser> {
+    return userMutation("auth.users.disable", username);
+}
+
+export async function deleteUser(username: string): Promise<ManagedAuthUser> {
+    return userMutation("auth.users.delete", username);
+}
+
+export async function changeUserPassword(
+    username: string,
+    newPassword: string
+): Promise<ManagedAuthUser> {
+    const response = await executeRequest({
+        action: "auth.users.changePassword",
+        username,
+        newPassword,
+    });
+    return parseManagedUserResult(response.data);
+}
+
+async function userMutation(action: string, username: string): Promise<ManagedAuthUser> {
+    const response = await executeRequest({ action, username });
+    return parseManagedUserResult(response.data);
+}
+
+function parseManagedUserResult(data: Record<string, unknown>[]): ManagedAuthUser {
+    if (data.length !== 1) {
+        throw new Error("The API returned an invalid user response.");
+    }
+    return parseManagedUser(data[0]);
+}
+
+function parseManagedUser(value: unknown): ManagedAuthUser {
+    if (typeof value !== "object" || value === null
+        || Object.keys(value).some(key => !["username", "enabled", "isAdmin"].includes(key))
+        || !("username" in value) || typeof value.username !== "string" || value.username.trim() === ""
+        || !("enabled" in value) || typeof value.enabled !== "boolean"
+        || !("isAdmin" in value) || typeof value.isAdmin !== "boolean") {
+        throw new Error("The API returned an invalid user response.");
+    }
+    return { username: value.username, enabled: value.enabled, isAdmin: value.isAdmin };
 }
 
 function parseSessionData(data: Record<string, unknown>[]): AuthSessionSnapshot {

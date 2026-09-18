@@ -1,0 +1,180 @@
+.user-management-page {
+    display: grid;
+    gap: 20px;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.user-management-header h1,
+.user-management-card h2 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.user-management-header h1 {
+    margin: 3px 0 7px;
+    font-size: clamp(26px, 4vw, 36px);
+}
+
+.user-management-header p {
+    margin: 0;
+    color: #64748b;
+}
+
+.user-management-eyebrow {
+    color: #2563eb !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.user-management-card {
+    padding: 22px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgb(15 23 42 / 5%);
+}
+
+.user-management-card h2 {
+    font-size: 18px;
+}
+
+.user-create-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(190px, 1fr) auto auto;
+    align-items: end;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.user-create-form label,
+.password-change-form label {
+    display: grid;
+    gap: 6px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.user-create-form input:not([type="checkbox"]),
+.password-change-form input {
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.user-create-form__checkbox {
+    display: flex !important;
+    min-height: 40px;
+    align-items: center;
+    gap: 7px !important;
+    white-space: nowrap;
+}
+
+.user-management-error {
+    padding: 11px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 7px;
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.user-management-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.user-table-shell {
+    overflow-x: auto;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.user-table th,
+.user-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.user-table th {
+    color: #475569;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.user-status {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.user-status.is-enabled {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.user-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.user-action--danger {
+    color: #b91c1c;
+}
+
+.user-action--danger:hover:not(:disabled) {
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.password-change-card {
+    position: sticky;
+    bottom: 16px;
+    border-color: #bfdbfe;
+    box-shadow: 0 14px 36px rgb(15 23 42 / 14%);
+}
+
+.password-change-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    align-items: end;
+    gap: 14px;
+    margin-top: 16px;
+}
+
+@media (max-width: 850px) {
+    .user-create-form,
+    .password-change-form {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 600px) {
+    .user-management-card {
+        padding: 16px;
+    }
+
+    .user-table th:nth-child(3),
+    .user-table td:nth-child(3) {
+        display: none;
+    }
+}
