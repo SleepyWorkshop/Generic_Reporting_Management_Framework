@@ -32,7 +32,11 @@ export default function UserManagement() {
         finally { if (!signal?.aborted) setLoading(false); }
     }, []);
 
-    useEffect(() => { const controller = new AbortController(); void loadUsers(controller.signal); return () => controller.abort(); }, [loadUsers]);
+    useEffect(() => {
+        const controller = new AbortController();
+        const task = window.setTimeout(() => void loadUsers(controller.signal), 0);
+        return () => { window.clearTimeout(task); controller.abort(); };
+    }, [loadUsers]);
 
     const runMutation = async (target: string, operation: () => Promise<unknown>) => {
         setBusyUser(target); setError("");
