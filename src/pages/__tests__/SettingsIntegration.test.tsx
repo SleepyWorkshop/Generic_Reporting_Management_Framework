@@ -43,7 +43,7 @@ describe("Settings application integration", () => {
             .mockResolvedValueOnce(response({ initialized: true }))
             .mockResolvedValueOnce(response({
                 authenticated: true,
-                user: { username: "Administrator", isAdmin: true },
+                user: { username: "Administrator", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
             }))
             .mockResolvedValueOnce(response({ authenticated: false, user: null }));
 

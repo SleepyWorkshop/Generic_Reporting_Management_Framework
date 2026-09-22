@@ -34,7 +34,7 @@ function sessionResponse(authenticated = false) {
         success: true,
         message: "OK",
         data: [authenticated
-            ? { authenticated: true, user: { username: "admin", isAdmin: true } }
+            ? { authenticated: true, user: { username: "admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" } }
             : { authenticated: false, user: null }],
         meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
     };

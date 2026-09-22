@@ -125,7 +125,7 @@ export function AuthProvider({ children, enabled = true }: { children: ReactNode
 
 function identityKey(state: AuthState): string {
     return state.status === "authenticated"
-        ? `authenticated:${state.user.username}:${String(state.user.isAdmin)}`
+        ? `authenticated:${state.user.username}:${state.user.backendRole ?? "none"}:${String(state.user.frontendAccess)}:${state.user.frontendRole ?? "none"}`
         : state.status;
 }
 

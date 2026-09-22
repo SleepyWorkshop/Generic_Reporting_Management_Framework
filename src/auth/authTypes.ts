@@ -1,25 +1,32 @@
 export interface AuthUser {
     username: string;
-    isAdmin: boolean;
+    backendRole: "read-only" | "data-operator" | "system-administrator" | null;
+    frontendAccess: boolean;
+    frontendRole: "application-administrator" | null;
 }
 
 export interface ManagedAuthUser {
     username: string;
     enabled: boolean;
-    isAdmin: boolean;
+    frontendAccess: true;
+    frontendRole: "application-administrator" | null;
+    backendProtected: boolean;
 }
 
 export interface CreateUserRequest {
     username: string;
     password: string;
-    isAdmin: boolean;
+    passwordConfirmation: string;
+    frontendRole: "application-administrator" | null;
 }
 
 export type UserManagementRequest =
-    | { action: "auth.users.list" }
-    | { action: "auth.users.create"; username: string; password: string; isAdmin: boolean }
-    | { action: "auth.users.enable" | "auth.users.disable" | "auth.users.delete"; username: string }
-    | { action: "auth.users.changePassword"; username: string; newPassword: string };
+    | { action: "auth.frontendUsers.list" }
+    | { action: "auth.frontendUsers.create"; username: string; password: string; passwordConfirmation: string; frontendRole: "application-administrator" | null }
+    | { action: "auth.frontendUsers.update"; username: string; newUsername: string }
+    | { action: "auth.frontendUsers.enable" | "auth.frontendUsers.disable" | "auth.frontendUsers.delete"; username: string }
+    | { action: "auth.frontendUsers.changePassword"; username: string; newPassword: string; passwordConfirmation: string }
+    | { action: "auth.frontendUsers.assignRole"; username: string; frontendRole: "application-administrator" | null };
 
 export type UserManagementResponse = ManagedAuthUser[];
 

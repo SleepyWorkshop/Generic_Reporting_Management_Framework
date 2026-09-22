@@ -9,12 +9,14 @@ const serviceMocks = vi.hoisted(() => ({
     disableUser: vi.fn(),
     deleteUser: vi.fn(),
     changeUserPassword: vi.fn(),
+    updateUsername: vi.fn(),
+    assignFrontendRole: vi.fn(),
 }));
 
 vi.mock("../../auth", async importOriginal => ({
     ...await importOriginal<typeof import("../../auth")>(),
     useAuth: () => ({
-        state: { status: "authenticated", user: { username: "Admin", isAdmin: true } },
+        state: { status: "authenticated", user: { username: "Admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" } },
         error: null,
     }),
 }));
@@ -27,9 +29,9 @@ import { ApiClientError } from "../../api/client";
 import UserManagement from "../UserManagement";
 
 const users = [
-    { username: "Admin", enabled: true, isAdmin: true },
-    { username: "Operator", enabled: true, isAdmin: false },
-    { username: "Disabled.User", enabled: false, isAdmin: false },
+    { username: "Admin", enabled: true, frontendAccess: true as const, frontendRole: "application-administrator" as const, backendProtected: true },
+    { username: "Operator", enabled: true, frontendAccess: true as const, frontendRole: null, backendProtected: false },
+    { username: "Disabled.User", enabled: false, frontendAccess: true as const, frontendRole: null, backendProtected: false },
 ];
 
 function renderPage() {
@@ -47,7 +49,7 @@ describe("User Management", () => {
     it("renders only safe user details and prevents current-user deletion", async () => {
         renderPage();
         await screen.findByText("Operator");
-        expect(screen.getByRole("heading", { name: "User Management" })).toBeTruthy();
+        expect(screen.getByRole("heading", { name: "Frontend User Management" })).toBeTruthy();
         expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings");
         expect((rowFor("Admin").getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(true);
         expect(screen.queryByText(/passwordHash|sessionId/i)).toBeNull();
@@ -60,15 +62,17 @@ describe("User Management", () => {
         expect(screen.getByRole("alert").textContent).toBe("Username is required.");
         expect(serviceMocks.createUser).not.toHaveBeenCalled();
 
-        serviceMocks.createUser.mockResolvedValue({ username: "New.User", enabled: true, isAdmin: false });
+        serviceMocks.createUser.mockResolvedValue({ username: "New.User", enabled: true, frontendAccess: true, frontendRole: null, backendProtected: false });
         fireEvent.change(screen.getByLabelText("Username"), { target: { value: " New.User " } });
         fireEvent.change(screen.getByLabelText("Password"), { target: { value: "new-user-password" } });
+        fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "new-user-password" } });
         fireEvent.click(screen.getByRole("button", { name: "Create user" }));
 
         await waitFor(() => expect(serviceMocks.createUser).toHaveBeenCalledWith({
             username: "New.User",
             password: "new-user-password",
-            isAdmin: false,
+            passwordConfirmation: "new-user-password",
+            frontendRole: null,
         }));
         await waitFor(() => expect(serviceMocks.listUsers).toHaveBeenCalledTimes(2));
     });
@@ -82,6 +86,7 @@ describe("User Management", () => {
         await screen.findByText("Operator");
         fireEvent.change(screen.getByLabelText("Username"), { target: { value: "Operator" } });
         fireEvent.change(screen.getByLabelText("Password"), { target: { value: "another-password" } });
+        fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "another-password" } });
         fireEvent.click(screen.getByRole("button", { name: "Create user" }));
         expect((await screen.findByRole("alert")).textContent).toBe("User already exists.");
     });
@@ -111,9 +116,12 @@ describe("User Management", () => {
         fireEvent.change(within(card).getByLabelText("New password"), {
             target: { value: "replacement-password" },
         });
+        fireEvent.change(within(card).getByLabelText("Confirm password"), {
+            target: { value: "replacement-password" },
+        });
         fireEvent.click(within(card).getByRole("button", { name: "Change password" }));
         await waitFor(() => expect(serviceMocks.changeUserPassword)
-            .toHaveBeenCalledWith("Operator", "replacement-password"));
+            .toHaveBeenCalledWith("Operator", "replacement-password", "replacement-password"));
         expect(screen.queryByText("replacement-password")).toBeNull();
     });
 });

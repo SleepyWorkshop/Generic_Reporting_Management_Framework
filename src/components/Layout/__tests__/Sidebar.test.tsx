@@ -38,7 +38,7 @@ function AuthenticatedSidebar({ isAdmin }: { isAdmin: boolean }) {
         <>
             <button type="button" onClick={() => applySessionSnapshot({
                 authenticated: true,
-                user: { username: "User", isAdmin },
+                user: { username: "User", backendRole: isAdmin ? "system-administrator" : null, frontendAccess: true, frontendRole: isAdmin ? "application-administrator" : null },
             })}>Authenticate</button>
             <MemoryRouter><Sidebar items={items} /></MemoryRouter>
         </>
@@ -97,13 +97,13 @@ describe("Sidebar", () => {
         fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
         expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
         expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
-        expect(screen.getAllByText("User")).toHaveLength(2);
+        expect(screen.getByText("Application User")).toBeTruthy();
 
         rerender(<AuthProvider enabled={false}><AuthenticatedSidebar isAdmin /></AuthProvider>);
         fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
         expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
         expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
-        expect(screen.getByText("Administrator")).toBeTruthy();
+        expect(screen.getByText("Application Administrator")).toBeTruthy();
     });
 
     it("logs out from the authenticated user area", async () => {

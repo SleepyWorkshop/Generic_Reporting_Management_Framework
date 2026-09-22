@@ -6,7 +6,7 @@ import { getFirstDashboardRoute, getNavigationRoute, loadNavigation } from "..";
 describe("NavigationEngine dashboard routing", () => {
     it("builds dashboard routes from configured dashboard IDs", () => {
         const navigation = loadNavigation(menu, {
-            dashboardIds: ["item-dashboard", "bill-dashboard"],
+            dashboardIds: ["item-dashboard", "sales-dashboard", "receipts-dashboard", "purchase-dashboard", "bill-dashboard"],
             reportIds: ["customer", "item"],
         });
         const item = navigation.find(item => item.dashboardId === "item-dashboard")!;

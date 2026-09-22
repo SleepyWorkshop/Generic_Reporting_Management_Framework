@@ -100,13 +100,23 @@ function ProtectedRoute() {
     if (state.status === "unauthenticated") {
         return <Navigate to="/login" replace />;
     }
+    if (!state.user.frontendAccess) {
+        return <Navigate to="/login" replace />;
+    }
     return <Outlet />;
 }
 
 function LoginRoute() {
-    const { state } = useAuth();
+    const { state, logout } = useAuth();
     if (state.status === "loading") {
         return <div className="setup-page"><Loading label="Restoring your session…" /></div>;
+    }
+    if (state.status === "authenticated" && !state.user.frontendAccess) {
+        return <div className="setup-page"><section className="setup-card">
+            <h1>Frontend access is not assigned</h1>
+            <p>This identity may have backend access, but it cannot use this application.</p>
+            <button className="app-button app-button--primary" type="button" onClick={() => void logout()}>Sign out</button>
+        </section></div>;
     }
     return state.status === "authenticated" ? <Navigate to="/" replace /> : <Login />;
 }
@@ -116,5 +126,5 @@ function AdminRoute() {
     if (state.status !== "authenticated") {
         return <Navigate to="/login" replace />;
     }
-    return state.user.isAdmin ? <Outlet /> : <Navigate to="/" replace />;
+    return state.user.frontendRole === "application-administrator" ? <Outlet /> : <Navigate to="/" replace />;
 }

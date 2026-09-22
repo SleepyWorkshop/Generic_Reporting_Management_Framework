@@ -52,7 +52,7 @@ describe("apiClient", () => {
             .mockResolvedValueOnce(new Response(JSON.stringify({
                 success: true,
                 message: "Login successful.",
-                data: [{ authenticated: true, user: { username: "Admin", isAdmin: true } }],
+                data: [{ authenticated: true, user: { username: "Admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" } }],
                 meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
             }), {
                 status: 200,
@@ -61,17 +61,18 @@ describe("apiClient", () => {
             .mockResolvedValueOnce(new Response(JSON.stringify({
                 success: true,
                 message: "User created.",
-                data: [{ username: "Operator", enabled: true, isAdmin: false }],
+                data: [{ username: "Operator", enabled: true, frontendAccess: true, frontendRole: null, backendProtected: false }],
                 meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
             }), { status: 201, headers: { "Content-Type": "application/json" } }));
         vi.stubGlobal("fetch", fetchMock);
 
         await apiClient({ action: "auth.login", username: "Admin", password: "not-persisted" });
         await apiClient({
-            action: "auth.users.create",
+            action: "auth.frontendUsers.create",
             username: "Operator",
             password: "also-not-persisted",
-            isAdmin: false,
+            passwordConfirmation: "also-not-persisted",
+            frontendRole: null,
         });
 
         expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({ action: "auth.csrf" });
@@ -98,6 +99,31 @@ describe("apiClient", () => {
         })).rejects.toThrow("invalid security token");
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0][1].body).not.toContain("not-sent");
+    });
+
+    it("resynchronizes once after a CSRF failure without looping", async () => {
+        const firstToken = "a".repeat(64);
+        const secondToken = "b".repeat(64);
+        const tokenResponse = (token: string) => new Response(JSON.stringify({
+            success: true, message: "Security token loaded.", data: [{ csrfToken: token }],
+            meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+        const csrfFailure = () => new Response(JSON.stringify({
+            success: false, message: "The security token is invalid or expired.",
+            error: { code: "CSRF_VALIDATION_FAILED", details: [] }, data: [],
+        }), { status: 403, headers: { "Content-Type": "application/json" } });
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(tokenResponse(firstToken))
+            .mockResolvedValueOnce(csrfFailure())
+            .mockResolvedValueOnce(tokenResponse(secondToken))
+            .mockResolvedValueOnce(csrfFailure());
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(apiClient({ action: "auth.frontendUsers.disable", username: "Operator" }))
+            .rejects.toMatchObject({ code: "CSRF_VALIDATION_FAILED" });
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+        expect((fetchMock.mock.calls[1][1].headers as Headers).get("X-CSRF-Token")).toBe(firstToken);
+        expect((fetchMock.mock.calls[3][1].headers as Headers).get("X-CSRF-Token")).toBe(secondToken);
     });
 
     it("uses a deployment API URL without exposing backend environment variables", async () => {

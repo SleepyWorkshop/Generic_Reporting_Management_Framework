@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 
 export default function Settings() {
     const { state } = useAuth();
-    const isAdmin = state.status === "authenticated" && state.user.isAdmin;
+    const isAdmin = state.status === "authenticated" && state.user.frontendRole === "application-administrator";
 
     return (
         <main className="settings-page">

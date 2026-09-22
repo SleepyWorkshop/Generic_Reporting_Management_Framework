@@ -28,7 +28,7 @@ function response(data: Record<string, unknown>) {
 
 const authenticated = {
     authenticated: true,
-    user: { username: "Administrator", isAdmin: true },
+    user: { username: "Administrator", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
 };
 const anonymous = { authenticated: false, user: null };
 
@@ -46,7 +46,7 @@ describe("login and logout flow", () => {
         await waitFor(() => expect(result.current.state.status).toBe("authenticated"));
         expect(result.current.state).toEqual({
             status: "authenticated",
-            user: { username: "Administrator", isAdmin: true },
+            user: authenticated.user,
         });
         expect(executeRequestMock).toHaveBeenCalledWith(
             { action: "auth.session" },

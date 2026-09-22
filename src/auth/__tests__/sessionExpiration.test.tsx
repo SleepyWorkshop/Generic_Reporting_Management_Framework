@@ -28,7 +28,7 @@ describe("expired authentication session", () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(apiResponse({
                 authenticated: true,
-                user: { username: "Administrator", isAdmin: true },
+                user: { username: "Administrator", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
             }))
             .mockResolvedValueOnce(new Response(JSON.stringify({
                 success: false,
@@ -58,7 +58,7 @@ describe("expired authentication session", () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(apiResponse({
                 authenticated: true,
-                user: { username: "Operator", isAdmin: false },
+                user: { username: "Operator", backendRole: null, frontendAccess: true, frontendRole: null },
             }))
             .mockResolvedValueOnce(new Response(JSON.stringify({
                 success: false,
@@ -78,7 +78,7 @@ describe("expired authentication session", () => {
 
         expect(result.current.state).toEqual({
             status: "authenticated",
-            user: { username: "Operator", isAdmin: false },
+            user: { username: "Operator", backendRole: null, frontendAccess: true, frontendRole: null },
         });
         expect(clearRequestCacheMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledTimes(2);

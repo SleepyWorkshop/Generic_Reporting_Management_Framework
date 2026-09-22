@@ -26,17 +26,17 @@ describe("authentication foundation", () => {
 
         act(() => result.current.applySessionSnapshot({
             authenticated: true,
-            user: { username: "admin", isAdmin: true },
+            user: { username: "admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
         }));
         expect(result.current.state).toEqual({
             status: "authenticated",
-            user: { username: "admin", isAdmin: true },
+            user: { username: "admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
         });
         expect(clearRequestCacheMock).toHaveBeenCalledTimes(1);
 
         act(() => result.current.applySessionSnapshot({
             authenticated: true,
-            user: { username: "admin", isAdmin: true },
+            user: { username: "admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" },
         }));
         expect(clearRequestCacheMock).toHaveBeenCalledTimes(1);
 
@@ -48,14 +48,14 @@ describe("authentication foundation", () => {
     it("accepts only a minimal backend session shape", () => {
         expect(parseAuthSessionSnapshot({
             authenticated: true,
-            user: { username: "reporter", isAdmin: false },
+            user: { username: "reporter", backendRole: null, frontendAccess: true, frontendRole: null },
         })).toEqual({
             authenticated: true,
-            user: { username: "reporter", isAdmin: false },
+            user: { username: "reporter", backendRole: null, frontendAccess: true, frontendRole: null },
         });
         expect(() => parseAuthSessionSnapshot({
             authenticated: true,
-            user: { username: "reporter", isAdmin: false, passwordHash: "secret" },
+            user: { username: "reporter", backendRole: null, frontendAccess: true, frontendRole: null, passwordHash: "secret" },
         })).toThrow("invalid authentication response");
         expect(parseAuthSessionSnapshot({ authenticated: false, user: null })).toEqual({
             authenticated: false,

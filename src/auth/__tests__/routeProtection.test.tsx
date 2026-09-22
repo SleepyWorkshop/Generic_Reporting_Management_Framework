@@ -51,7 +51,7 @@ function prepareSession(authenticated: boolean, isAdmin = true) {
     executeRequestMock
         .mockResolvedValueOnce(response({ initialized: true }))
         .mockResolvedValueOnce(response(authenticated
-            ? { authenticated: true, user: { username: "Administrator", isAdmin } }
+            ? { authenticated: true, user: { username: "Administrator", backendRole: isAdmin ? "system-administrator" : null, frontendAccess: true, frontendRole: isAdmin ? "application-administrator" : null } }
             : { authenticated: false, user: null }));
 }
 

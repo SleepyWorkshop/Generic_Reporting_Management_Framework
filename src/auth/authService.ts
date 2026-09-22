@@ -21,40 +21,53 @@ export async function logout(signal?: AbortSignal): Promise<AuthSessionSnapshot>
 }
 
 export async function listUsers(signal?: AbortSignal): Promise<ManagedAuthUser[]> {
-    const response = await executeRequest({ action: "auth.users.list" }, { signal });
+    const response = await executeRequest({ action: "auth.frontendUsers.list" }, { signal });
     return response.data.map(parseManagedUser);
 }
 
 export async function createUser(request: CreateUserRequest): Promise<ManagedAuthUser> {
     const response = await executeRequest({
-        action: "auth.users.create",
+        action: "auth.frontendUsers.create",
         username: request.username,
         password: request.password,
-        isAdmin: request.isAdmin,
+        passwordConfirmation: request.passwordConfirmation,
+        frontendRole: request.frontendRole,
     });
     return parseManagedUserResult(response.data);
 }
 
 export async function enableUser(username: string): Promise<ManagedAuthUser> {
-    return userMutation("auth.users.enable", username);
+    return userMutation("auth.frontendUsers.enable", username);
 }
 
 export async function disableUser(username: string): Promise<ManagedAuthUser> {
-    return userMutation("auth.users.disable", username);
+    return userMutation("auth.frontendUsers.disable", username);
 }
 
 export async function deleteUser(username: string): Promise<ManagedAuthUser> {
-    return userMutation("auth.users.delete", username);
+    return userMutation("auth.frontendUsers.delete", username);
+}
+
+export async function updateUsername(username: string, newUsername: string): Promise<ManagedAuthUser> {
+    const response = await executeRequest({ action: "auth.frontendUsers.update", username, newUsername });
+    return parseManagedUserResult(response.data);
+}
+
+export async function assignFrontendRole(username: string, frontendRole: "application-administrator" | null): Promise<ManagedAuthUser> {
+    const response = await executeRequest({ action: "auth.frontendUsers.assignRole", username, frontendRole });
+    return parseManagedUserResult(response.data);
 }
 
 export async function changeUserPassword(
     username: string,
-    newPassword: string
+    newPassword: string,
+    passwordConfirmation: string
 ): Promise<ManagedAuthUser> {
     const response = await executeRequest({
-        action: "auth.users.changePassword",
+        action: "auth.frontendUsers.changePassword",
         username,
         newPassword,
+        passwordConfirmation,
     });
     return parseManagedUserResult(response.data);
 }
@@ -73,13 +86,15 @@ function parseManagedUserResult(data: Record<string, unknown>[]): ManagedAuthUse
 
 function parseManagedUser(value: unknown): ManagedAuthUser {
     if (typeof value !== "object" || value === null
-        || Object.keys(value).some(key => !["username", "enabled", "isAdmin"].includes(key))
+        || Object.keys(value).some(key => !["username", "enabled", "frontendAccess", "frontendRole", "backendProtected"].includes(key))
         || !("username" in value) || typeof value.username !== "string" || value.username.trim() === ""
         || !("enabled" in value) || typeof value.enabled !== "boolean"
-        || !("isAdmin" in value) || typeof value.isAdmin !== "boolean") {
+        || !("frontendAccess" in value) || value.frontendAccess !== true
+        || !("frontendRole" in value) || (value.frontendRole !== null && value.frontendRole !== "application-administrator")
+        || !("backendProtected" in value) || typeof value.backendProtected !== "boolean") {
         throw new Error("The API returned an invalid user response.");
     }
-    return { username: value.username, enabled: value.enabled, isAdmin: value.isAdmin };
+    return { username: value.username, enabled: value.enabled, frontendAccess: true, frontendRole: value.frontendRole, backendProtected: value.backendProtected };
 }
 
 function parseSessionData(data: Record<string, unknown>[]): AuthSessionSnapshot {
@@ -105,10 +120,13 @@ export function parseAuthSessionSnapshot(value: unknown): AuthSessionSnapshot {
     if (value.authenticated !== true || !("user" in value)
         || Object.keys(value).some(key => key !== "authenticated" && key !== "user")
         || typeof value.user !== "object" || value.user === null
-        || Object.keys(value.user).some(key => key !== "username" && key !== "isAdmin")
+        || Object.keys(value.user).some(key => !["username", "backendRole", "frontendAccess", "frontendRole"].includes(key))
         || !("username" in value.user) || typeof value.user.username !== "string"
         || value.user.username.trim() === ""
-        || !("isAdmin" in value.user) || typeof value.user.isAdmin !== "boolean") {
+        || !("backendRole" in value.user) || ![null, "read-only", "data-operator", "system-administrator"].includes(value.user.backendRole as string | null)
+        || !("frontendAccess" in value.user) || typeof value.user.frontendAccess !== "boolean"
+        || !("frontendRole" in value.user) || ![null, "application-administrator"].includes(value.user.frontendRole as string | null)
+        || (value.user.frontendAccess === false && value.user.frontendRole !== null)) {
         throw new Error("The API returned an invalid authentication response.");
     }
 
@@ -116,7 +134,9 @@ export function parseAuthSessionSnapshot(value: unknown): AuthSessionSnapshot {
         authenticated: true,
         user: {
             username: value.user.username,
-            isAdmin: value.user.isAdmin,
+            backendRole: value.user.backendRole as "read-only" | "data-operator" | "system-administrator" | null,
+            frontendAccess: value.user.frontendAccess,
+            frontendRole: value.user.frontendRole as "application-administrator" | null,
         },
     };
 }

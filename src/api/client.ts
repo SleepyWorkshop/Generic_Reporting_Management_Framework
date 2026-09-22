@@ -11,6 +11,15 @@ const csrfProtectedActions = new Set([
     "auth.users.disable",
     "auth.users.delete",
     "auth.users.changePassword",
+    "auth.users.update",
+    "auth.users.assignAuthorization",
+    "auth.frontendUsers.create",
+    "auth.frontendUsers.update",
+    "auth.frontendUsers.enable",
+    "auth.frontendUsers.disable",
+    "auth.frontendUsers.delete",
+    "auth.frontendUsers.changePassword",
+    "auth.frontendUsers.assignRole",
     "setup.createAdmin",
     "insert",
     "update",
@@ -46,7 +55,8 @@ export class ApiClientError extends Error {
 
 export async function apiClient(
     body: object,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    csrfRetry = false
 ): Promise<ApiResponse> {
     const action = getAction(body);
     const requestToken = action && csrfProtectedActions.has(action)
@@ -64,7 +74,8 @@ export async function apiClient(
         body: JSON.stringify(body),
     });
     const rotatedToken = response.headers.get("X-CSRF-Token");
-    if (rotatedToken && /^[a-f0-9]{64}$/.test(rotatedToken)) csrfToken = rotatedToken;
+    if (rotatedToken && /^[a-f0-9]{64}$/.test(rotatedToken)
+        && csrfToken === requestToken) csrfToken = rotatedToken;
 
     let payload: unknown;
 
@@ -93,7 +104,12 @@ export async function apiClient(
             authenticationRequiredListeners.forEach(listener => listener());
         }
         if (response.status === 403 && apiError?.code === "CSRF_VALIDATION_FAILED") {
-            clearCsrfToken();
+            // An older concurrent request may fail after a newer response has
+            // already rotated the shared token. Never discard that newer token.
+            if (csrfToken === requestToken) clearCsrfToken();
+            if (!csrfRetry && action && csrfProtectedActions.has(action)) {
+                return apiClient(body, options, true);
+            }
         }
 
         throw new ApiClientError(message, response.status, apiError);
