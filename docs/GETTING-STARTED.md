@@ -25,6 +25,7 @@ VITE_API_URL=http://localhost:8000
 ```
 
 Use the URL of your backend deployment and do not commit local environment files or secrets. The checked-in `.env.example` records the supported variable.
+For local loopback development, the client automatically aligns `localhost` and `127.0.0.1` with the hostname used to open the frontend. This keeps the session cookie on the same browser site while preserving `SameSite=Lax` protection.
 
 ## Start Development
 

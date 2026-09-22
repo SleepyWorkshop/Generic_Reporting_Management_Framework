@@ -1,6 +1,6 @@
 import type { ApiError, ApiResponse } from "../types/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = resolveApiUrl(import.meta.env.VITE_API_URL || "/api");
 const API_CREDENTIALS: RequestCredentials = "include";
 const authenticationRequiredListeners = new Set<() => void>();
 const csrfProtectedActions = new Set([
@@ -28,6 +28,34 @@ const csrfProtectedActions = new Set([
 ]);
 let csrfToken: string | null = null;
 let csrfRequest: Promise<string> | null = null;
+
+/**
+ * Keep local browser and API traffic on the same loopback site. Browsers do
+ * not send a SameSite=Lax session cookie between localhost and 127.0.0.1,
+ * even when CORS and credentials are configured correctly.
+ */
+export function resolveApiUrl(configuredUrl: string, pageUrl = globalThis.location?.href): string {
+    if (!pageUrl || configuredUrl.startsWith("/")) return configuredUrl;
+
+    try {
+        const apiUrl = new URL(configuredUrl);
+        const browserUrl = new URL(pageUrl);
+        if (isLoopbackHost(apiUrl.hostname)
+            && isLoopbackHost(browserUrl.hostname)
+            && apiUrl.hostname !== browserUrl.hostname) {
+            apiUrl.hostname = browserUrl.hostname;
+            return apiUrl.toString();
+        }
+    } catch {
+        // Fetch reports malformed deployment URLs with its normal error path.
+    }
+
+    return configuredUrl;
+}
+
+function isLoopbackHost(hostname: string): boolean {
+    return hostname === "localhost" || hostname === "127.0.0.1";
+}
 
 export function subscribeToAuthenticationRequired(listener: () => void): () => void {
     authenticationRequiredListeners.add(listener);

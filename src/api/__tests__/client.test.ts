@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiClientError, apiClient, clearCsrfToken } from "../client";
+import { ApiClientError, apiClient, clearCsrfToken, resolveApiUrl } from "../client";
 
 describe("apiClient", () => {
     afterEach(() => {
@@ -82,6 +82,51 @@ describe("apiClient", () => {
         expect(postLoginHeaders.get("X-CSRF-Token")).toBe(rotatedToken);
         expect(localStorage.length).toBe(0);
         expect(sessionStorage.length).toBe(0);
+    });
+
+    it("keeps the CSRF bootstrap and login on the browser loopback host", async () => {
+        vi.stubEnv("VITE_API_URL", "http://localhost:8000/index.php");
+        vi.stubGlobal("location", { href: "http://127.0.0.1:5173/login" });
+        vi.resetModules();
+        const { apiClient: loopbackClient } = await import("../client");
+        const token = "c".repeat(64);
+        const rotatedToken = "d".repeat(64);
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                success: true,
+                message: "Security token loaded.",
+                data: [{ csrfToken: token }],
+                meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
+            }), { status: 200, headers: { "Content-Type": "application/json" } }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                success: true,
+                message: "Login successful.",
+                data: [{ authenticated: true, user: { username: "Admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" } }],
+                meta: { page: null, pageSize: null, totalRows: 1, rowsReturned: 1, executionTime: null },
+            }), {
+                status: 200,
+                headers: { "Content-Type": "application/json", "X-CSRF-Token": rotatedToken },
+            }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await loopbackClient({ action: "auth.login", username: "Admin", password: "not-persisted" });
+
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls.map(call => call[0])).toEqual([
+            "http://127.0.0.1:8000/index.php",
+            "http://127.0.0.1:8000/index.php",
+        ]);
+        expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: "include" });
+        expect(fetchMock.mock.calls[1][1]).toMatchObject({ credentials: "include" });
+        expect((fetchMock.mock.calls[1][1].headers as Headers).get("X-CSRF-Token")).toBe(token);
+    });
+
+    it("only aligns explicit loopback aliases", () => {
+        expect(resolveApiUrl("http://localhost:8000/index.php", "http://127.0.0.1:5173/login"))
+            .toBe("http://127.0.0.1:8000/index.php");
+        expect(resolveApiUrl("https://api.example.com/index.php", "https://app.example.com/login"))
+            .toBe("https://api.example.com/index.php");
+        expect(resolveApiUrl("/api", "http://127.0.0.1:5173/login")).toBe("/api");
     });
 
     it("handles an invalid CSRF bootstrap response without sending credentials", async () => {
