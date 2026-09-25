@@ -31,7 +31,7 @@ export async function createUser(request: CreateUserRequest): Promise<ManagedAut
         username: request.username,
         password: request.password,
         passwordConfirmation: request.passwordConfirmation,
-        frontendRole: request.frontendRole,
+        role: request.role,
     });
     return parseManagedUserResult(response.data);
 }
@@ -53,8 +53,8 @@ export async function updateUsername(username: string, newUsername: string): Pro
     return parseManagedUserResult(response.data);
 }
 
-export async function assignFrontendRole(username: string, frontendRole: "application-administrator" | null): Promise<ManagedAuthUser> {
-    const response = await executeRequest({ action: "auth.frontendUsers.assignRole", username, frontendRole });
+export async function assignFrontendAuthorization(username: string, frontendAccess: boolean, frontendRole: "application-administrator" | null): Promise<ManagedAuthUser> {
+    const response = await executeRequest({ action: "auth.frontendUsers.assignRole", username, frontendAccess, frontendRole });
     return parseManagedUserResult(response.data);
 }
 
@@ -86,15 +86,17 @@ function parseManagedUserResult(data: Record<string, unknown>[]): ManagedAuthUse
 
 function parseManagedUser(value: unknown): ManagedAuthUser {
     if (typeof value !== "object" || value === null
-        || Object.keys(value).some(key => !["username", "enabled", "frontendAccess", "frontendRole", "backendProtected"].includes(key))
+        || Object.keys(value).some(key => !["username", "enabled", "backendRole", "frontendAccess", "frontendRole", "backendProtected"].includes(key))
         || !("username" in value) || typeof value.username !== "string" || value.username.trim() === ""
         || !("enabled" in value) || typeof value.enabled !== "boolean"
-        || !("frontendAccess" in value) || value.frontendAccess !== true
+        || !("backendRole" in value) || ![null, "read-only", "data-operator", "system-administrator"].includes(value.backendRole as string | null)
+        || !("frontendAccess" in value) || typeof value.frontendAccess !== "boolean"
         || !("frontendRole" in value) || (value.frontendRole !== null && value.frontendRole !== "application-administrator")
+        || (value.frontendAccess === false && value.frontendRole !== null)
         || !("backendProtected" in value) || typeof value.backendProtected !== "boolean") {
         throw new Error("The API returned an invalid user response.");
     }
-    return { username: value.username, enabled: value.enabled, frontendAccess: true, frontendRole: value.frontendRole, backendProtected: value.backendProtected };
+    return { username: value.username, enabled: value.enabled, backendRole: value.backendRole as ManagedAuthUser["backendRole"], frontendAccess: value.frontendAccess, frontendRole: value.frontendRole, backendProtected: value.backendProtected };
 }
 
 function parseSessionData(data: Record<string, unknown>[]): AuthSessionSnapshot {

@@ -269,7 +269,7 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
                         <UserRound aria-hidden="true" />
                         <span className="app-sidebar__label app-sidebar__identity-copy">
                             <strong>{authentication.user.username}</strong>
-                            <small>{authentication.user.frontendRole === "application-administrator" ? "Application Administrator" : "Application User"}</small>
+                            <small>{authentication.user.backendRole === "system-administrator" ? "Super Admin" : authentication.user.frontendRole === "application-administrator" ? "Admin" : "Application User"}</small>
                         </span>
                     </div>
                     <button

@@ -1,5 +1,7 @@
 .user-management-page {
     display: grid;
+    width: 100%;
+    min-width: 0;
     gap: 20px;
     max-width: 1180px;
     margin: 0 auto;
@@ -43,7 +45,7 @@
 
 .user-create-form {
     display: grid;
-    grid-template-columns: minmax(160px, 1fr) minmax(190px, 1fr) auto auto;
+    grid-template-columns: repeat(3, minmax(160px, 1fr)) minmax(140px, 0.7fr) auto;
     align-items: end;
     gap: 14px;
     margin-top: 18px;
@@ -59,6 +61,7 @@
 }
 
 .user-create-form input:not([type="checkbox"]),
+.user-create-form select,
 .password-change-form input {
     min-height: 40px;
     padding: 8px 10px;
@@ -91,7 +94,11 @@
 }
 
 .user-table-shell {
+    width: 100%;
+    min-width: 0;
     overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
 }
 
 .user-table {
@@ -106,6 +113,12 @@
     border-bottom: 1px solid #e2e8f0;
     text-align: left;
     vertical-align: middle;
+}
+
+.user-table td:first-child {
+    max-width: 240px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .user-table th {
@@ -130,10 +143,43 @@
     color: #047857;
 }
 
+.user-role,
+.user-access {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.user-access.is-granted {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
 .user-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 7px;
+}
+
+.user-table td:last-child {
+    min-width: 260px;
+}
+
+.user-management-empty {
+    padding: 30px 16px;
+    color: #64748b;
+    text-align: center;
+}
+
+.user-protected {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .user-action--danger {
@@ -160,6 +206,12 @@
     margin-top: 16px;
 }
 
+@media (max-width: 1100px) {
+    .user-create-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 850px) {
     .user-create-form,
     .password-change-form {
@@ -173,8 +225,60 @@
         padding: 16px;
     }
 
-    .user-table th:nth-child(3),
-    .user-table td:nth-child(3) {
-        display: none;
+    .user-table-shell {
+        overflow: visible;
+        border: 0;
+    }
+
+    .user-table,
+    .user-table tbody,
+    .user-table tr,
+    .user-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .user-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .user-table tr {
+        margin-bottom: 12px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    .user-table td,
+    .user-table td:first-child,
+    .user-table td:last-child {
+        max-width: none;
+        min-width: 0;
+        padding: 7px 0;
+        border: 0;
+    }
+
+    .user-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .user-actions .app-button {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .user-management-page *,
+    .user-management-page *::before,
+    .user-management-page *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
     }
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { getRequestErrorMessage, isRequestAbort } from "../api/request";
 import { useAuth, type ManagedAuthUser } from "../auth";
-import { assignFrontendRole, changeUserPassword, createUser, deleteUser, disableUser, enableUser, listUsers, updateUsername } from "../auth/authService";
+import { assignFrontendAuthorization, changeUserPassword, createUser, deleteUser, disableUser, enableUser, listUsers, updateUsername } from "../auth/authService";
 import ErrorState from "../components/Common/Error";
 import Loading from "../components/Common/Loading";
 
@@ -11,6 +11,8 @@ const MINIMUM_PASSWORD_LENGTH = 12;
 export default function UserManagement() {
     const { state: authentication } = useAuth();
     const currentUsername = authentication.status === "authenticated" ? authentication.user.username : "";
+    const isSuperAdmin = authentication.status === "authenticated"
+        && authentication.user.backendRole === "system-administrator";
     const [users, setUsers] = useState<ManagedAuthUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -18,7 +20,7 @@ export default function UserManagement() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [passwordConfirmation, setPasswordConfirmation] = useState("");
-    const [applicationAdministrator, setApplicationAdministrator] = useState(false);
+    const [role, setRole] = useState<"read-only" | "data-operator" | "application-administrator">("read-only");
     const [editTarget, setEditTarget] = useState<ManagedAuthUser | null>(null);
     const [newUsername, setNewUsername] = useState("");
     const [passwordTarget, setPasswordTarget] = useState("");
@@ -52,8 +54,8 @@ export default function UserManagement() {
         if (password !== passwordConfirmation) return setError("Password confirmation does not match.");
         setBusyUser("create"); setError("");
         try {
-            await createUser({ username: username.trim(), password, passwordConfirmation, frontendRole: applicationAdministrator ? "application-administrator" : null });
-            setUsername(""); setPassword(""); setPasswordConfirmation(""); setApplicationAdministrator(false); await loadUsers();
+            await createUser({ username: username.trim(), password, passwordConfirmation, role });
+            setUsername(""); setPassword(""); setPasswordConfirmation(""); setRole("read-only"); await loadUsers();
         } catch (requestError: unknown) { setError(getRequestErrorMessage(requestError, "Unable to create user.")); }
         finally { setBusyUser(""); }
     };
@@ -77,21 +79,29 @@ export default function UserManagement() {
             <label>Username<input value={username} maxLength={64} autoComplete="off" onChange={event => setUsername(event.target.value)} disabled={busyUser === "create"} /></label>
             <label>Password<input type="password" value={password} minLength={MINIMUM_PASSWORD_LENGTH} autoComplete="new-password" onChange={event => setPassword(event.target.value)} disabled={busyUser === "create"} /></label>
             <label>Confirm password<input type="password" value={passwordConfirmation} minLength={MINIMUM_PASSWORD_LENGTH} autoComplete="new-password" onChange={event => setPasswordConfirmation(event.target.value)} disabled={busyUser === "create"} /></label>
-            <label className="user-create-form__checkbox"><input type="checkbox" checked={applicationAdministrator} onChange={event => setApplicationAdministrator(event.target.checked)} disabled={busyUser === "create"} />Application Administrator</label>
+            <label>Role<select value={role} onChange={event => setRole(event.target.value as typeof role)} disabled={busyUser === "create"}><option value="application-administrator">Admin</option><option value="data-operator">Data Operator</option><option value="read-only">Read Only</option></select></label>
             <button className="app-button app-button--primary" type="submit" disabled={busyUser === "create"}>{busyUser === "create" ? "Creating…" : "Create user"}</button>
         </form></section>
         {error && <div className="user-management-error" role="alert">{error}</div>}
         <section className="user-management-card" aria-labelledby="users-title"><div className="user-management-section-heading"><h2 id="users-title">Frontend users</h2><button className="app-button" type="button" onClick={() => void loadUsers()} disabled={loading}>Refresh</button></div>
             {loading && users.length === 0 ? <Loading label="Loading users…" /> : null}
             {!loading && error && users.length === 0 ? <ErrorState title="Unable to load users" message={error} onRetry={() => void loadUsers()} /> : null}
+            {!loading && !error && users.length === 0 ? <div className="user-management-empty">No frontend users found.</div> : null}
             {users.length > 0 && <div className="user-table-shell"><table className="user-table"><thead><tr><th>Username</th><th>Status</th><th>Frontend role</th><th>Identity</th><th>Actions</th></tr></thead><tbody>{users.map(user => {
-                const current = user.username.toLowerCase() === currentUsername.toLowerCase(); const busy = busyUser.toLowerCase() === user.username.toLowerCase();
-                return <tr key={user.username}><td>{user.username}{current ? " (you)" : ""}</td><td><span className={user.enabled ? "user-status is-enabled" : "user-status"}>{user.enabled ? "Enabled" : "Disabled"}</span></td><td>{user.frontendRole === "application-administrator" ? "Application Administrator" : "Frontend Read"}</td><td>{user.backendProtected ? "Also managed by backend" : "Frontend only"}</td><td><div className="user-actions">
-                    <button className="app-button" type="button" disabled={busy} onClick={() => void runMutation(user.username, () => assignFrontendRole(user.username, user.frontendRole ? null : "application-administrator"))}>{user.frontendRole ? "Remove admin" : "Make app admin"}</button>
-                    <button className="app-button" type="button" disabled={busy || user.backendProtected} onClick={() => { setEditTarget(user); setNewUsername(user.username); }}>Edit username</button>
-                    <button className="app-button" type="button" disabled={busy || user.backendProtected} onClick={() => void runMutation(user.username, () => user.enabled ? disableUser(user.username) : enableUser(user.username))}>{user.enabled ? "Disable" : "Enable"}</button>
-                    <button className="app-button" type="button" disabled={busy || user.backendProtected} onClick={() => { setPasswordTarget(user.username); setNewPassword(""); setNewPasswordConfirmation(""); }}>Change password</button>
-                    <button className="app-button user-action--danger" type="button" disabled={busy || current || user.backendProtected} onClick={() => void runMutation(user.username, () => deleteUser(user.username))}>Delete</button>
+                const current = user.username.toLowerCase() === currentUsername.toLowerCase();
+                const busy = busyUser.toLowerCase() === user.username.toLowerCase();
+                const backendManaged = user.backendRole === "system-administrator";
+                const protectedForAdmin = !isSuperAdmin && (current || user.backendProtected || user.frontendRole === "application-administrator");
+                const displayedRole = backendManaged ? "Super Admin" : user.frontendRole === "application-administrator" ? "Admin" : user.backendRole === "data-operator" ? "Data Operator" : "Read Only";
+                return <tr key={user.username}><td className="user-name-cell">{user.username}{current ? " (you)" : ""}</td><td><span className={user.enabled ? "user-status is-enabled" : "user-status"}>{user.enabled ? "Enabled" : "Disabled"}</span></td><td><span className="user-role">{user.frontendAccess ? displayedRole : "No access"}</span></td><td><span className={user.frontendAccess ? "user-access is-granted" : "user-access"}>{backendManaged ? "Backend Managed" : user.frontendAccess ? "Frontend access" : "Access removed"}</span></td><td><div className="user-actions">
+                    {backendManaged ? <span className="user-protected">Backend Managed</span> : protectedForAdmin ? <span className="user-protected">Protected Admin</span> : <>
+                    {isSuperAdmin && user.frontendAccess && <button className="app-button" type="button" disabled={busy} onClick={() => void runMutation(user.username, () => assignFrontendAuthorization(user.username, true, user.frontendRole ? null : "application-administrator"))}>{user.frontendRole ? "Remove Admin" : "Make Admin"}</button>}
+                    <button className="app-button" type="button" disabled={busy} onClick={() => void runMutation(user.username, () => assignFrontendAuthorization(user.username, !user.frontendAccess, null))}>{user.frontendAccess ? "Remove access" : "Grant access"}</button>
+                    <button className="app-button" type="button" disabled={busy} onClick={() => { setEditTarget(user); setNewUsername(user.username); }}>Edit username</button>
+                    <button className="app-button" type="button" disabled={busy || (!user.enabled && !user.frontendAccess)} onClick={() => void runMutation(user.username, () => user.enabled ? disableUser(user.username) : enableUser(user.username))}>{user.enabled ? "Disable" : "Enable"}</button>
+                    <button className="app-button" type="button" disabled={busy} onClick={() => { setPasswordTarget(user.username); setNewPassword(""); setNewPasswordConfirmation(""); }}>Change password</button>
+                    <button className="app-button user-action--danger" type="button" disabled={busy || current} onClick={() => void runMutation(user.username, () => deleteUser(user.username))}>Delete</button>
+                    </>}
                 </div></td></tr>;
             })}</tbody></table></div>}
         </section>

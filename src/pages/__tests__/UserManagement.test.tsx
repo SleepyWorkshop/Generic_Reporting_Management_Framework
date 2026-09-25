@@ -10,13 +10,16 @@ const serviceMocks = vi.hoisted(() => ({
     deleteUser: vi.fn(),
     changeUserPassword: vi.fn(),
     updateUsername: vi.fn(),
-    assignFrontendRole: vi.fn(),
+    assignFrontendAuthorization: vi.fn(),
+}));
+const authMock = vi.hoisted(() => ({
+    user: { username: "Admin", backendRole: "system-administrator" as "system-administrator" | null, frontendAccess: true, frontendRole: "application-administrator" as "application-administrator" | null },
 }));
 
 vi.mock("../../auth", async importOriginal => ({
     ...await importOriginal<typeof import("../../auth")>(),
     useAuth: () => ({
-        state: { status: "authenticated", user: { username: "Admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" } },
+        state: { status: "authenticated", user: authMock.user },
         error: null,
     }),
 }));
@@ -29,9 +32,9 @@ import { ApiClientError } from "../../api/client";
 import UserManagement from "../UserManagement";
 
 const users = [
-    { username: "Admin", enabled: true, frontendAccess: true as const, frontendRole: "application-administrator" as const, backendProtected: true },
-    { username: "Operator", enabled: true, frontendAccess: true as const, frontendRole: null, backendProtected: false },
-    { username: "Disabled.User", enabled: false, frontendAccess: true as const, frontendRole: null, backendProtected: false },
+    { username: "Admin", enabled: true, backendRole: "system-administrator" as const, frontendAccess: true as const, frontendRole: "application-administrator" as const, backendProtected: true },
+    { username: "Operator", enabled: true, backendRole: "data-operator" as const, frontendAccess: true as const, frontendRole: null, backendProtected: false },
+    { username: "Disabled.User", enabled: false, backendRole: "read-only" as const, frontendAccess: true as const, frontendRole: null, backendProtected: false },
 ];
 
 function renderPage() {
@@ -44,15 +47,52 @@ function rowFor(username: string) {
 }
 
 describe("User Management", () => {
-    beforeEach(() => Object.values(serviceMocks).forEach(mock => mock.mockReset()));
+    beforeEach(() => {
+        Object.values(serviceMocks).forEach(mock => mock.mockReset());
+        authMock.user = { username: "Admin", backendRole: "system-administrator", frontendAccess: true, frontendRole: "application-administrator" };
+    });
 
     it("renders only safe user details and prevents current-user deletion", async () => {
         renderPage();
         await screen.findByText("Operator");
         expect(screen.getByRole("heading", { name: "Frontend User Management" })).toBeTruthy();
         expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings");
-        expect((rowFor("Admin").getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(true);
+        const superAdminRow = rowFor("Admin");
+        expect(superAdminRow.getAllByText("Backend Managed").length).toBeGreaterThan(0);
+        expect(superAdminRow.queryByRole("button")).toBeNull();
         expect(screen.queryByText(/passwordHash|sessionId/i)).toBeNull();
+    });
+
+    it("offers every allowed create role and never offers a Super Admin role", async () => {
+        renderPage();
+        await screen.findByText("Operator");
+        const role = screen.getByLabelText("Role") as HTMLSelectElement;
+        expect(Array.from(role.options).map(option => option.text)).toEqual(["Admin", "Data Operator", "Read Only"]);
+        expect(screen.queryByRole("option", { name: "Super Admin" })).toBeNull();
+        expect(screen.queryByRole("option", { name: "System Administrator" })).toBeNull();
+    });
+
+    it("does not expose frontend management actions for a Super Admin row", async () => {
+        renderPage();
+        await screen.findByText("Operator");
+        const row = rowFor("Admin");
+        for (const action of ["Remove Admin", "Remove access", "Disable", "Delete", "Demote"]) {
+            expect(row.queryByRole("button", { name: action })).toBeNull();
+        }
+        expect(row.getByText("Super Admin")).toBeTruthy();
+        expect(row.getAllByText("Backend Managed").length).toBeGreaterThan(0);
+    });
+
+    it("hides self-management actions from an application Admin", async () => {
+        authMock.user = { username: "Application.Admin", backendRole: null, frontendAccess: true, frontendRole: "application-administrator" };
+        serviceMocks.listUsers.mockResolvedValue([
+            { username: "Application.Admin", enabled: true, backendRole: null, frontendAccess: true, frontendRole: "application-administrator", backendProtected: false },
+        ]);
+        render(<MemoryRouter><UserManagement /></MemoryRouter>);
+        await screen.findByText("Application.Admin (you)");
+        const row = rowFor("Application.Admin");
+        expect(row.getByText("Protected Admin")).toBeTruthy();
+        expect(row.queryByRole("button")).toBeNull();
     });
 
     it("validates and creates a user, then refreshes the list", async () => {
@@ -62,7 +102,7 @@ describe("User Management", () => {
         expect(screen.getByRole("alert").textContent).toBe("Username is required.");
         expect(serviceMocks.createUser).not.toHaveBeenCalled();
 
-        serviceMocks.createUser.mockResolvedValue({ username: "New.User", enabled: true, frontendAccess: true, frontendRole: null, backendProtected: false });
+        serviceMocks.createUser.mockResolvedValue({ username: "New.User", enabled: true, backendRole: "read-only", frontendAccess: true, frontendRole: null, backendProtected: false });
         fireEvent.change(screen.getByLabelText("Username"), { target: { value: " New.User " } });
         fireEvent.change(screen.getByLabelText("Password"), { target: { value: "new-user-password" } });
         fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "new-user-password" } });
@@ -72,7 +112,7 @@ describe("User Management", () => {
             username: "New.User",
             password: "new-user-password",
             passwordConfirmation: "new-user-password",
-            frontendRole: null,
+            role: "read-only",
         }));
         await waitFor(() => expect(serviceMocks.listUsers).toHaveBeenCalledTimes(2));
     });
@@ -104,6 +144,15 @@ describe("User Management", () => {
         await waitFor(() => expect(serviceMocks.enableUser).toHaveBeenCalledWith("Disabled.User"));
         fireEvent.click(rowFor("Operator").getByRole("button", { name: "Delete" }));
         await waitFor(() => expect(serviceMocks.deleteUser).toHaveBeenCalledWith("Operator"));
+    });
+
+    it("grants and removes frontend access through the server contract", async () => {
+        serviceMocks.assignFrontendAuthorization.mockResolvedValue(users[1]);
+        renderPage();
+        await screen.findByText("Operator");
+
+        fireEvent.click(rowFor("Operator").getByRole("button", { name: "Remove access" }));
+        await waitFor(() => expect(serviceMocks.assignFrontendAuthorization).toHaveBeenCalledWith("Operator", false, null));
     });
 
     it("changes a user password without rendering it", async () => {
