@@ -25,12 +25,12 @@ import ExportMenu, { type ExportMenuOption } from "../Common/ExportMenu";
 import Loading from "../Common/Loading";
 import GenericGrid from "../Grid/GenericGrid";
 import ReportTableFrame from "../Grid/ReportTableFrame";
+import { getDashboardTableViewportHeight } from "./tableViewport";
 
 
 const EMPTY_FILTER_DEFINITIONS: FilterDefinition[] = [];
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-
 interface TableWidgetProps {
     title: string;
     description?: string;
@@ -506,6 +506,8 @@ export default function TableWidget({
                         rows={visibleRows}
                         columns={columns}
                         gridConfig={gridConfig}
+                        height={getDashboardTableViewportHeight(activePageSize)}
+                        autoHeight={visibleRows.length <= 10}
                         initialSort={request.sort}
                         serverPagination={{
                             page: currentPage,

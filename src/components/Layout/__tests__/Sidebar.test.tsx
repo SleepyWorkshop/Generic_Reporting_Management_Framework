@@ -104,6 +104,7 @@ describe("Sidebar", () => {
         expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
         expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
         expect(screen.getByText("Super Admin")).toBeTruthy();
+        expect(screen.getByText("V 1.0.0.0")).toBeTruthy();
     });
 
     it("logs out from the authenticated user area", async () => {

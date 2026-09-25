@@ -12,9 +12,10 @@ import {
     disableUser,
     enableUser,
     listUsers,
+    updateUserProfile,
 } from "../authService";
 
-const user = { username: "Operator", enabled: true, backendRole: "data-operator", frontendAccess: true, frontendRole: null, backendProtected: false };
+const user = { name: "Data Operator", username: "Operator", mobile: "+15551234567", email: "operator@example.test", enabled: true, backendRole: "data-operator", frontendAccess: true, frontendRole: null, backendProtected: false, createdAt: "2026-01-01T00:00:00+00:00" };
 const response = (data: Record<string, unknown>[]) => ({ success: true, message: "OK", data });
 
 describe("user management auth service", () => {
@@ -31,13 +32,29 @@ describe("user management auth service", () => {
 
     it("sends the exact create-user contract", async () => {
         executeRequestMock.mockResolvedValueOnce(response([user]));
-        await createUser({ username: "Operator", password: "private-password", passwordConfirmation: "private-password", role: "data-operator" });
+        await createUser({ name: "Read Only User", username: "Operator", mobile: "+15551234567", email: null, password: "private-password", passwordConfirmation: "private-password", role: "read-only" });
         expect(executeRequestMock.mock.calls[0][0]).toEqual({
             action: "auth.frontendUsers.create",
+            name: "Read Only User",
             username: "Operator",
+            mobile: "+15551234567",
+            email: null,
             password: "private-password",
             passwordConfirmation: "private-password",
-            role: "data-operator",
+            role: "read-only",
+        });
+    });
+
+    it("sends profile updates separately from password changes", async () => {
+        executeRequestMock.mockResolvedValueOnce(response([user]));
+        await updateUserProfile("Operator", "Updated Operator", "Updated.Operator", "+15557654321", null);
+        expect(executeRequestMock.mock.calls[0][0]).toEqual({
+            action: "auth.frontendUsers.update",
+            username: "Operator",
+            name: "Updated Operator",
+            newUsername: "Updated.Operator",
+            mobile: "+15557654321",
+            email: null,
         });
     });
 

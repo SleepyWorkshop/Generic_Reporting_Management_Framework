@@ -25,6 +25,7 @@ interface Props {
     columns: ColumnDefinition[];
     gridConfig: GridConfig;
     height?: CSSProperties["height"];
+    autoHeight?: boolean;
     initialSort?: SortDefinition[];
     serverPagination?: {
         page: number;
@@ -46,13 +47,14 @@ export default function GenericGrid({
     columns,
     gridConfig,
     height,
+    autoHeight = false,
     initialSort = [],
     serverPagination,
     onSortChange,
 }: Props) {
 
     const { setApi } = useGrid();
-    const usesNaturalHeight = height === undefined;
+    const usesNaturalHeight = autoHeight || height === undefined;
 
     const gridRef = useRef<AgGridReact>(null);
     const [selectedRows, setSelectedRows] = useState<Set<Record<string, unknown>>>(() => new Set());
@@ -246,7 +248,7 @@ export default function GenericGrid({
                 className={gridTheme.className}
                 style={{
                     ...gridTheme.style,
-                    ...(height !== undefined ? { height } : { height: "auto" }),
+                    ...(!usesNaturalHeight && height !== undefined ? { height } : { height: "auto" }),
                 }}
             >
 

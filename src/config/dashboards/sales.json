@@ -62,65 +62,6 @@
         "exportCurrentView": true,
         "exportAll": true,
         "filename": "sales-month-wise"
-      },
-      "drillDown": {
-        "enabled": true,
-        "next": {
-          "id": "sales-month-category-detail",
-          "type": "table",
-          "title": "Sales by Month and Category",
-          "description": "Category totals for the selected month.",
-          "queryDefinition": {
-            "format": "sql",
-            "resource": "widgets/category-sales-month-wise"
-          },
-          "filters": [
-            { "field": "Month", "label": "Month", "type": "text", "operator": "equals" }
-          ],
-          "columns": [
-            { "field": "Month", "header": "Month" },
-            { "field": "Category", "header": "Category" },
-            { "field": "Sales", "header": "Sales", "dataType": "number" }
-          ],
-          "pageSize": 10,
-          "drillDown": {
-            "enabled": true,
-            "next": {
-              "id": "sales-month-category-ranking",
-              "type": "table",
-              "title": "Top Sales by Month and Category",
-              "description": "Ranked category rows for the selected month and category.",
-              "queryDefinition": {
-                "format": "sql",
-                "resource": "widgets/TOP-10-month-Wise-Category-wise"
-              },
-              "filters": [
-                { "field": "Month", "label": "Month", "type": "text", "operator": "equals" },
-                { "field": "Category", "label": "Category", "type": "text", "operator": "equals" }
-              ],
-              "columns": [
-                { "field": "Month", "header": "Month" },
-                { "field": "Category", "header": "Category" },
-                { "field": "Sales", "header": "Sales", "dataType": "number" }
-              ],
-              "pageSize": 10
-            },
-            "mappings": [
-              {
-                "sourceField": "Category",
-                "contextField": "selectedCategory",
-                "filter": { "field": "Category", "label": "Category", "type": "text", "operator": "equals" }
-              }
-            ]
-          }
-        },
-        "mappings": [
-          {
-            "sourceField": "Month",
-            "contextField": "selectedMonth",
-            "filter": { "field": "Month", "label": "Month", "type": "text", "operator": "equals" }
-          }
-        ]
       }
     },
     {

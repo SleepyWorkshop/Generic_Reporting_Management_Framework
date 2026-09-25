@@ -20,7 +20,6 @@ const csrfProtectedActions = new Set([
     "auth.frontendUsers.delete",
     "auth.frontendUsers.changePassword",
     "auth.frontendUsers.assignRole",
-    "setup.createAdmin",
     "insert",
     "update",
     "delete",

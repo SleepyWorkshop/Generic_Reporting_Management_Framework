@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { getRequestErrorMessage } from "../api/request";
 import { useAuth } from "../auth";
+import { APPLICATION_VERSION } from "../config/version";
 
 export default function Login() {
     const { login, error: sessionError } = useAuth();
@@ -9,6 +11,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -30,12 +33,13 @@ export default function Login() {
     };
 
     return (
-        <main className="setup-page">
-            <section className="setup-card" aria-labelledby="login-title">
+        <main className="setup-page login-page">
+            <section className="setup-card login-card" aria-labelledby="login-title">
                 <div className="setup-card__heading">
                     <p className="setup-card__eyebrow">Generic Reporting Framework</p>
+                    <p className="login-card__welcome">Welcome back</p>
                     <h1 id="login-title">Sign in</h1>
-                    <p>Use your application account to continue.</p>
+                    <p>Continue to your reporting workspace.</p>
                 </div>
 
                 <form className="setup-form" onSubmit={event => void handleSubmit(event)} noValidate>
@@ -56,17 +60,22 @@ export default function Login() {
                     </label>
 
                     <label htmlFor="login-password">
-                        Password
-                        <input
-                            id="login-password"
-                            name="password"
-                            type="password"
-                            autoComplete="current-password"
-                            value={password}
-                            onChange={event => setPassword(event.target.value)}
-                            disabled={submitting}
-                            required
-                        />
+                        <span>Password</span>
+                        <span className="login-password-field">
+                            <input
+                                id="login-password"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={event => setPassword(event.target.value)}
+                                disabled={submitting}
+                                required
+                            />
+                            <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} disabled={submitting} onClick={() => setShowPassword(value => !value)}>
+                                {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                            </button>
+                        </span>
                     </label>
 
                     {(error || sessionError) && (
@@ -82,6 +91,7 @@ export default function Login() {
                     </button>
                 </form>
             </section>
+            <p className="login-page__version">V {APPLICATION_VERSION}</p>
         </main>
     );
 }

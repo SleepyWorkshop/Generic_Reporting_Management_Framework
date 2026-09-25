@@ -5,7 +5,6 @@ import Layout from "../components/Layout/Layout";
 import Dashboard from "../pages/Dashboard";
 import ReportViewer from "../pages/ReportViewer";
 import DashboardViewer from "../pages/DashboardViewer";
-import Setup from "../pages/Setup";
 import Login from "../pages/Login";
 import UserManagement from "../pages/UserManagement";
 import Settings from "../pages/Settings";
@@ -51,8 +50,7 @@ export function ApplicationRoutes() {
     if (state.status === "required") {
         return (
             <Routes>
-                <Route path="/setup" element={<Setup />} />
-                <Route path="*" element={<Navigate to="/setup" replace />} />
+                <Route path="*" element={<SetupRequired />} />
             </Routes>
         );
     }
@@ -90,6 +88,10 @@ export function ApplicationRoutes() {
             </Route>
         </Routes>
     );
+}
+
+function SetupRequired() {
+    return <main className="setup-page"><section className="setup-card" aria-labelledby="setup-required-title"><div className="setup-card__heading"><p className="setup-card__eyebrow">Generic Reporting Framework</p><h1 id="setup-required-title">User setup is required.</h1><p>Please complete user setup in the Backend Admin Console.</p></div></section></main>;
 }
 
 function ProtectedRoute() {

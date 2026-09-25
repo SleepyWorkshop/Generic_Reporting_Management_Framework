@@ -6,6 +6,7 @@ import { clearRequestCache } from "../../../engine/RequestCache";
 import ChartWidget from "../ChartWidget";
 import StatWidget from "../StatWidget";
 import TableWidget from "../TableWidget";
+import { getDashboardTableViewportHeight } from "../tableViewport";
 
 const { executeRequestMock, genericGridProps } = vi.hoisted(() => ({
     executeRequestMock: vi.fn(),
@@ -83,7 +84,33 @@ describe("dashboard widgets", () => {
         const props = genericGridProps.mock.calls.at(-1)?.[0];
         expect(props.columns.map((column: { field: string }) => column.field)).toEqual(["Item_Code", "Item_Desc"]);
         expect(props.serverPagination).toMatchObject({ page: 1, pageSize: 10, totalRows: 1 });
+        expect(props.height).toBe(466);
+        expect(props.autoHeight).toBe(true);
         expect(executeRequestMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("sizes dashboard table viewports for ten complete rows without growing for larger pages", () => {
+        expect(getDashboardTableViewportHeight(10)).toBe(466);
+        expect(getDashboardTableViewportHeight(25)).toBe(466);
+        expect(getDashboardTableViewportHeight(50)).toBe(466);
+        expect(getDashboardTableViewportHeight(100)).toBe(466);
+    });
+
+    it("uses the controlled scroll viewport only when the returned page exceeds ten rows", async () => {
+        executeRequestMock.mockResolvedValue({
+            success: true,
+            message: "ok",
+            data: Array.from({ length: 25 }, (_, index) => ({ Item_Code: String(index + 1) })),
+            meta: { page: 1, pageSize: 25, totalRows: 25, rowsReturned: 25, executionTime: 1 },
+        });
+        render(
+            <DashboardProvider>
+                <TableWidget title="Items" request={request} pageSize={25} />
+            </DashboardProvider>
+        );
+
+        await waitFor(() => expect(genericGridProps.mock.calls.at(-1)?.[0].autoHeight).toBe(false));
+        expect(genericGridProps.mock.calls.at(-1)?.[0].height).toBe(466);
     });
 
     it("passes configured sort into dashboard table grid state and its initial request", async () => {
