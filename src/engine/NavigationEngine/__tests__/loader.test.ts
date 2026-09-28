@@ -9,8 +9,9 @@ describe("NavigationEngine dashboard routing", () => {
             dashboardIds: ["item-dashboard", "sales-dashboard", "receipts-dashboard", "purchase-dashboard", "bill-dashboard"],
             reportIds: ["customer", "item"],
         });
-        const item = navigation.find(item => item.dashboardId === "item-dashboard")!;
-        const bill = navigation.find(item => item.dashboardId === "bill-dashboard")!;
+        const dashboards = navigation.find(item => item.id === "dashboards")?.children ?? [];
+        const item = dashboards.find(item => item.dashboardId === "item-dashboard")!;
+        const bill = dashboards.find(item => item.dashboardId === "bill-dashboard")!;
 
         expect(getNavigationRoute(item)).toBe("/dashboard/item-dashboard");
         expect(getNavigationRoute(bill)).toBe("/dashboard/bill-dashboard");
