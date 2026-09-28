@@ -179,6 +179,23 @@ describe("User Management", () => {
     ).toBeTruthy();
   });
 
+  it("uses an accessible bounded viewport for large non-report user lists", async () => {
+    const manyUsers = Array.from({ length: 20 }, (_, index) => ({
+      ...users[2],
+      name: `User ${index + 1}`,
+      username: `User.${index + 1}`,
+      email: `user${index + 1}@example.test`,
+    }));
+    const view = renderPage(manyUsers);
+    await screen.findByText("User.20");
+    const viewport = view.container.querySelector(".user-table-shell");
+    expect(viewport?.getAttribute("tabindex")).toBe("0");
+    expect(viewport?.getAttribute("aria-label")).toBe("Frontend users");
+    expect(within(viewport as HTMLElement).getAllByRole("row")).toHaveLength(
+      21,
+    );
+  });
+
   it("derives current role options from frontend capabilities", async () => {
     renderPage();
     await screen.findByText("Operator");
@@ -238,6 +255,22 @@ describe("User Management", () => {
       within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }),
     );
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps modal actions outside the scrollable form body and locks the page", async () => {
+    renderPage();
+    await screen.findByText("Operator");
+    fireEvent.click(screen.getByRole("button", { name: "Create User" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.querySelector(".user-modal-form__body")).toBeTruthy();
+    expect(
+      dialog
+        .querySelector(".user-modal__actions")
+        ?.parentElement?.classList.contains("user-modal-form"),
+    ).toBe(true);
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("shows a Super Admin as backend managed with no normal actions", async () => {

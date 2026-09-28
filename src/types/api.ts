@@ -8,7 +8,13 @@ export interface ApiMeta {
 
 export interface ApiError {
     code: string;
-    details: Array<{ path?: string; message?: string } | string>;
+    details: Array<{
+        path?: string;
+        message?: string;
+        attemptsRemaining?: number;
+        locked?: boolean;
+        retryAfterSeconds?: number;
+    } | string>;
 }
 
 export interface ApiResponse {

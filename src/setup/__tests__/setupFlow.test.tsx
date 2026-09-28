@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -136,5 +136,42 @@ describe("first-time setup flow", () => {
         fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
         expect((await screen.findByRole("alert")).textContent).toBe("Invalid username or password.");
+    });
+
+    it("shows safe attempt and lockout feedback supplied by the backend", async () => {
+        executeRequestMock
+            .mockResolvedValueOnce(setupResponse(true))
+            .mockResolvedValueOnce(sessionResponse())
+            .mockRejectedValueOnce(new ApiClientError("Invalid username or password.", 401, {
+                code: "INVALID_CREDENTIALS",
+                details: [{ attemptsRemaining: 3, locked: false }],
+            }))
+            .mockRejectedValueOnce(new ApiClientError("Too many unsuccessful login attempts.", 429, {
+                code: "LOGIN_RATE_LIMITED",
+                details: [{ locked: true, retryAfterSeconds: 840 }],
+            }));
+        renderFlow("/login");
+        await screen.findByRole("heading", { name: "Sign in" });
+        fireEvent.change(screen.getByLabelText("Username"), { target: { value: "Administrator" } });
+        fireEvent.change(screen.getByLabelText("Password"), { target: { value: "wrong-password" } });
+        fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+        expect((await screen.findByRole("alert")).textContent).toBe("Invalid username or password. Attempts remaining: 3.");
+        fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+        expect((await screen.findByRole("alert")).textContent).toBe("Too many unsuccessful login attempts. Please try again in 14 minutes.");
+    });
+
+    it("opens accessible forgot-credentials help and restores the login page", async () => {
+        executeRequestMock
+            .mockResolvedValueOnce(setupResponse(true))
+            .mockResolvedValueOnce(sessionResponse());
+        renderFlow("/login");
+        await screen.findByRole("heading", { name: "Sign in" });
+        fireEvent.click(screen.getByRole("button", { name: "Forgot username or password?" }));
+        const dialog = screen.getByRole("dialog", { name: "Forgot Username or Password?" });
+        expect(within(dialog).getByText(/contact your system administrator/i)).not.toBeNull();
+        expect(document.body.style.overflow).toBe("hidden");
+        fireEvent.click(dialog.querySelector(".login-help-dialog__footer button") as HTMLButtonElement);
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(document.body.style.overflow).toBe("");
     });
 });

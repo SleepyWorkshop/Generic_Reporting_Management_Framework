@@ -21,6 +21,7 @@ import {
 } from "../auth/authService";
 import ErrorState from "../components/Common/Error";
 import Loading from "../components/Common/Loading";
+import AccessibleDialog from "../components/Common/AccessibleDialog";
 import {
   frontendCapabilities,
   getAssignableFrontendRoles,
@@ -39,41 +40,10 @@ function UserDialog({
   children: ReactNode;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const element = dialog.current;
-    if (!element) return;
-    if (typeof element.showModal === "function") element.showModal();
-    else element.setAttribute("open", "");
-    return () => {
-      if (element.open && typeof element.close === "function") element.close();
-    };
-  }, []);
   return (
-    <dialog
-      ref={dialog}
-      className="user-modal"
-      aria-labelledby="user-modal-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-    >
-      <div className="user-modal__surface">
-        <header className="user-modal__header">
-          <h2 id="user-modal-title">{title}</h2>
-          <button
-            className="user-modal__close"
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
-        <div className="user-modal__body">{children}</div>
-      </div>
-    </dialog>
+    <AccessibleDialog title={title} onClose={onClose} className="user-modal">
+      {children}
+    </AccessibleDialog>
   );
 }
 
@@ -356,7 +326,7 @@ export default function UserManagement({
           <div className="user-management-empty">No frontend users found.</div>
         ) : null}
         {users.length > 0 && (
-          <div className="user-table-shell">
+          <div className="user-table-shell" tabIndex={0} aria-label="Frontend users">
             <table className="user-table">
               <thead>
                 <tr>
@@ -539,6 +509,7 @@ export default function UserManagement({
             onSubmit={(event) => void handleCreate(event)}
             noValidate
           >
+            <div className="user-modal-form__body">
             <label>
               <RequiredLabel>Name</RequiredLabel>
               <input
@@ -632,6 +603,7 @@ export default function UserManagement({
                 {modalError}
               </p>
             )}
+            </div>
             <div className="user-modal__actions">
               <button className="app-button" type="button" onClick={closeModal}>
                 Cancel
@@ -654,6 +626,7 @@ export default function UserManagement({
             onSubmit={(event) => void handleProfileEdit(event)}
             noValidate
           >
+            <div className="user-modal-form__body">
             <label>
               <RequiredLabel>Name</RequiredLabel>
               <input
@@ -698,6 +671,7 @@ export default function UserManagement({
                 {modalError}
               </p>
             )}
+            </div>
             <div className="user-modal__actions">
               <button className="app-button" type="button" onClick={closeModal}>
                 Cancel
@@ -723,6 +697,7 @@ export default function UserManagement({
             onSubmit={(event) => void handlePasswordChange(event)}
             noValidate
           >
+            <div className="user-modal-form__body">
             <label>
               <RequiredLabel>New Password</RequiredLabel>
               <input
@@ -752,6 +727,7 @@ export default function UserManagement({
                 {modalError}
               </p>
             )}
+            </div>
             <div className="user-modal__actions">
               <button className="app-button" type="button" onClick={closeModal}>
                 Cancel

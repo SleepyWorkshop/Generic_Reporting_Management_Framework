@@ -133,6 +133,44 @@
     margin-top: 2px;
 }
 
+.login-help-link {
+    justify-self: center;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: #2563eb;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.login-help-link:hover:not(:disabled),
+.login-help-link:focus-visible {
+    text-decoration: underline;
+}
+
+.login-help-dialog {
+    width: min(480px, calc(100vw - 32px));
+}
+
+.login-help-dialog__body {
+    padding: 20px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.login-help-dialog__body p {
+    margin: 0;
+}
+
+.login-help-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
 .setup-form .form-error {
     margin: -4px 0 0;
 }
