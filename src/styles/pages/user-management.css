@@ -259,29 +259,40 @@
 }
 
 .user-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   max-height: min(760px, calc(100dvh - 32px));
+  padding: 0;
+  overflow: hidden;
   animation: user-modal-enter 160ms ease-out;
 }
 
 .user-modal .app-dialog__body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
   overflow: hidden;
 }
+
 .user-modal-form {
-  display: flex;
-  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
-  flex-direction: column;
+  max-height: calc(100dvh - 32px);
 }
+
 .user-modal-form__body {
   display: grid;
-  flex: 1 1 auto;
   min-height: 0;
-  padding: 20px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 20px;
   gap: 15px;
 }
+
 .user-modal__actions {
   display: flex;
   flex: 0 0 auto;
@@ -291,6 +302,7 @@
   border-top: 1px solid #e2e8f0;
   background: #fff;
 }
+
 .user-modal__error {
   margin: 0;
   padding: 10px 12px;
@@ -409,6 +421,25 @@
 
   .user-actions .app-button {
     width: 100%;
+  }
+
+    .user-modal {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .user-modal .app-dialog__body,
+  .user-modal-form {
+    max-height: calc(100dvh - 20px);
+  }
+
+  .user-modal-form__body {
+    padding: 16px;
+  }
+
+  .user-modal__actions {
+    padding: 12px 16px;
   }
 }
 
