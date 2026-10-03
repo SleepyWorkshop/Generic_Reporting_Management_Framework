@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import Sidebar from "../Sidebar";
 import type { NavigationItem } from "../../../types/navigation";
 import { AuthProvider, useAuth } from "../../../auth";
+import { APPLICATION_VERSION } from "../../../config/version";
 
 const { logoutMock } = vi.hoisted(() => ({ logoutMock: vi.fn() }));
 
@@ -103,7 +104,8 @@ describe("Sidebar", () => {
         fireEvent.click(screen.getByRole("button", { name: "Authenticate" }));
         expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
         expect(screen.queryByRole("link", { name: "User Management" })).toBeNull();
-        expect(screen.getByText("Application Administrator")).toBeTruthy();
+        expect(screen.getByText("Super Admin")).toBeTruthy();
+        expect(screen.getByText(`V ${APPLICATION_VERSION}`)).toBeTruthy();
     });
 
     it("logs out from the authenticated user area", async () => {

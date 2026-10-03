@@ -1,5 +1,9 @@
 .dashboard-table {
-    height: 100%;
+    align-self: start;
+}
+
+.dashboard-table .universal-grid > .ag-theme-alpine {
+    min-height: 260px;
 }
 
 .dashboard-table__export-progress {
@@ -49,6 +53,12 @@
 }
 
 @media (max-width: 640px) {
+    .dashboard-table .universal-grid:not(.universal-grid--natural-height) .mobile-report-list {
+        max-height: min(420px, 55vh);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
     .dashboard-table__inline-error {
         align-items: stretch;
         flex-direction: column;

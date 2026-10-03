@@ -10,21 +10,18 @@ import {
 } from "react";
 
 import { getRequestErrorMessage, isRequestAbort } from "../api/request";
-import { createInitialAdministrator, getSetupStatus } from "./setupService";
-import type { InitialAdminRequest, SetupState } from "./setupTypes";
+import { getSetupStatus } from "./setupService";
+import type { SetupState } from "./setupTypes";
 
 interface SetupContextValue {
     state: SetupState;
-    submitting: boolean;
     refresh: () => Promise<void>;
-    createAdministrator: (request: InitialAdminRequest) => Promise<void>;
 }
 
 const SetupContext = createContext<SetupContextValue | undefined>(undefined);
 
 export function SetupProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<SetupState>({ status: "loading", error: null });
-    const [submitting, setSubmitting] = useState(false);
     const mounted = useRef(true);
 
     const loadStatus = useCallback(async (signal?: AbortSignal) => {
@@ -73,26 +70,10 @@ export function SetupProvider({ children }: { children: ReactNode }) {
         await loadStatus();
     }, [loadStatus]);
 
-    const createAdministrator = useCallback(async (request: InitialAdminRequest) => {
-        setSubmitting(true);
-        try {
-            await createInitialAdministrator(request);
-            if (mounted.current) {
-                setState({ status: "complete", error: null });
-            }
-        } finally {
-            if (mounted.current) {
-                setSubmitting(false);
-            }
-        }
-    }, []);
-
     const value = useMemo(() => ({
         state,
-        submitting,
         refresh,
-        createAdministrator,
-    }), [state, submitting, refresh, createAdministrator]);
+    }), [state, refresh]);
 
     return <SetupContext.Provider value={value}>{children}</SetupContext.Provider>;
 }

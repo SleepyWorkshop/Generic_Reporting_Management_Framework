@@ -6,27 +6,35 @@ export interface AuthUser {
 }
 
 export interface ManagedAuthUser {
+    name: string | null;
     username: string;
+    mobile: string | null;
+    email: string | null;
     enabled: boolean;
-    frontendAccess: true;
+    backendRole: "read-only" | "data-operator" | "system-administrator" | null;
+    frontendAccess: boolean;
     frontendRole: "application-administrator" | null;
     backendProtected: boolean;
+    createdAt: string;
 }
 
 export interface CreateUserRequest {
+    name: string;
     username: string;
+    mobile: string;
+    email: string | null;
     password: string;
     passwordConfirmation: string;
-    frontendRole: "application-administrator" | null;
+    role: "read-only" | "data-operator" | "application-administrator";
 }
 
 export type UserManagementRequest =
     | { action: "auth.frontendUsers.list" }
-    | { action: "auth.frontendUsers.create"; username: string; password: string; passwordConfirmation: string; frontendRole: "application-administrator" | null }
-    | { action: "auth.frontendUsers.update"; username: string; newUsername: string }
+    | { action: "auth.frontendUsers.create"; name: string; username: string; mobile: string; email: string | null; password: string; passwordConfirmation: string; role: "read-only" | "data-operator" | "application-administrator" }
+    | { action: "auth.frontendUsers.update"; username: string; name: string; newUsername: string; mobile: string; email: string | null }
     | { action: "auth.frontendUsers.enable" | "auth.frontendUsers.disable" | "auth.frontendUsers.delete"; username: string }
     | { action: "auth.frontendUsers.changePassword"; username: string; newPassword: string; passwordConfirmation: string }
-    | { action: "auth.frontendUsers.assignRole"; username: string; frontendRole: "application-administrator" | null };
+    | { action: "auth.frontendUsers.assignRole"; username: string; frontendAccess: boolean; frontendRole: "application-administrator" | null };
 
 export type UserManagementResponse = ManagedAuthUser[];
 

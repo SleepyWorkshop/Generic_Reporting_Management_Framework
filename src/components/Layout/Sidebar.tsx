@@ -8,6 +8,7 @@ import { getReportIds } from "../../engine/ReportEngine/reportLoader";
 import { getDashboardIds } from "../../engine/DashboardEngine";
 import type { NavigationIcon, NavigationItem } from "../../types/navigation";
 import { useAuth } from "../../auth";
+import { APPLICATION_VERSION } from "../../config/version";
 
 const SIDEBAR_STORAGE_KEY = "generic-report-sidebar-collapsed";
 const REPORTS_STORAGE_KEY = "generic-report-sidebar-reports-expanded";
@@ -269,7 +270,7 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
                         <UserRound aria-hidden="true" />
                         <span className="app-sidebar__label app-sidebar__identity-copy">
                             <strong>{authentication.user.username}</strong>
-                            <small>{authentication.user.frontendRole === "application-administrator" ? "Application Administrator" : "Application User"}</small>
+                            <small>{authentication.user.backendRole === "system-administrator" ? "Super Admin" : authentication.user.frontendRole === "application-administrator" ? "Admin" : "Application User"}</small>
                         </span>
                     </div>
                     <button
@@ -283,6 +284,9 @@ export default function Sidebar({ items = configuredItems }: { items?: Navigatio
                         <LogOut aria-hidden="true" />
                         <span className="app-sidebar__label">{loggingOut ? "Signing out…" : "Sign out"}</span>
                     </button>
+                    <span className="app-sidebar__version" title={`Version ${APPLICATION_VERSION}`}>
+                        <span className="app-sidebar__label">V {APPLICATION_VERSION}</span>
+                    </span>
                     {logoutError && <p className="app-sidebar__account-error" role="alert">{logoutError}</p>}
                 </div>
             )}
